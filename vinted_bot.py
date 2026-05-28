@@ -21,7 +21,7 @@ LAENDER = ["7", "193", "195", "10", "6", "13"]  # DE, AT, CH, IT, FR, ES
 # ─── Brand IDs ────────────────────────────────────────────────────
 NIKE    = 53
 ADIDAS  = 14
-LACOSTE = 60
+LACOSTE = 98  # Lacoste (Krokodil-Logo) korrekte Brand ID
 RL      = 88
 TRIKOT_BRANDS = [53, 14, 60, 88, 316, 103, 254]
 
@@ -62,7 +62,8 @@ VERBOTEN = [
     "ugg","crocs","birkenstock","loafer","pumps","ballerina",
     "kinder","kinderjacke","kinderhose","baby","babykleidung","kleinkind","junge","mädchen",
     "kids","children","toddler","bambino","bambina","bambini","neonato","enfant","bébé",
-    "bebe","niño","niña","infantil",
+    "bebe","niño","niña","infantil","bimbo","bimba","ragazzo","ragazza","garçon","fille",
+    "enfant","junior","mini","petit","petite","lacoste kids","lacoste baby","lacoste mini",
     "tasche","bag","rucksack","backpack","cap","mütze","beanie","gürtel","belt",
     "schal","socken","socks","handschuhe","uhr","watch","schmuck","kette","ring",
     "brille","parfum","ball","fußball","basketball",
@@ -125,10 +126,14 @@ seen_ids: dict[str, set[int]] = {cat["name"]: set() for cat in CATEGORIES}
 first_run = True
 
 # ─── API ──────────────────────────────────────────────────────────
+PROXY_URL = os.getenv("PROXY_URL")  # http://user:pass@ip:port
+PROXIES   = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
+
 def get_cookies():
     try:
         s = requests.Session()
-        s.get("https://www.vinted.de", headers=HEADERS, timeout=10)
+        s.get("https://www.vinted.de", headers=HEADERS,
+              proxies=PROXIES, timeout=10)
         return s.cookies.get_dict()
     except:
         return {}
@@ -143,7 +148,8 @@ def fetch_items(brand_ids, pmax):
         params.append(f"price_to={pmax}")
     url = "https://www.vinted.de/api/v2/catalog/items?" + "&".join(params)
     try:
-        r = requests.get(url, headers=HEADERS, cookies=get_cookies(), timeout=15)
+        r = requests.get(url, headers=HEADERS, cookies=get_cookies(),
+                         proxies=PROXIES, timeout=15)
         r.raise_for_status()
         return r.json().get("items", [])
     except Exception as e:
