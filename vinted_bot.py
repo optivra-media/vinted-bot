@@ -293,8 +293,4 @@ async def on_ready():
         print(f"   {'✅' if cat['ch'] != 0 else '❌'} {cat['name']}")
     check_all.start()
 
-@client.event
-async def on_member_join(member):
-    pass  # Keine Willkommensnachricht
-
 client.run(DISCORD_TOKEN)
