@@ -1,31 +1,55 @@
 """
-Vinted Discord Bot – Feste Kategorien & Channels
-=================================================
-Jede Kategorie postet automatisch in ihren eigenen Discord-Channel.
+Vinted Snipebot – Vollständig kategorisiert
+============================================
+Channels & Variablen in Railway:
 
-KATEGORIEN:
-  Nike (alles)     → CHANNEL_NIKE
-  Nike unter 10€   → CHANNEL_NIKE_10
-  Nike unter 20€   → CHANNEL_NIKE_20
-  Adidas (alles)   → CHANNEL_ADIDAS
-  Adidas unter 15€ → CHANNEL_ADIDAS_15
-  Adidas unter 40€ → CHANNEL_ADIDAS_40
+SNIPEBOT NIKE:
+  CHANNEL_NIKE                → #nike (alles)
+  CHANNEL_NIKE_10             → #nike-10 (0.01–10€)
+  CHANNEL_NIKE_20             → #nike-20 (10.01–20€)
+  CHANNEL_NIKE_TRACKPANTS     → #nike-trackpants
+  CHANNEL_NIKE_TRACKSUITS     → #nike-tracksuits
+  CHANNEL_NIKE_JACKEN         → #nike-jacken
+  CHANNEL_NIKE_SHIRTS         → #nike-shirts
+  CHANNEL_NIKE_HOODIES        → #nike-hoodies
+  CHANNEL_NIKE_POLOS          → #nike-polos
 
-SETUP:
-  pip install discord.py requests python-dotenv
+SNIPEBOT ADIDAS:
+  CHANNEL_ADIDAS              → #adidas (alles)
+  CHANNEL_ADIDAS_15           → #adidas-15 (0.01–15€)
+  CHANNEL_ADIDAS_40           → #adidas-40 (15.01–40€)
+  CHANNEL_ADIDAS_TRACKPANTS   → #adidas-trackpants
+  CHANNEL_ADIDAS_TRACKSUITS   → #adidas-tracksuits
+  CHANNEL_ADIDAS_JACKEN       → #adidas-jacken
+  CHANNEL_ADIDAS_SHIRTS       → #adidas-shirts
+  CHANNEL_ADIDAS_HOODIES      → #adidas-hoodies
+  CHANNEL_ADIDAS_POLOS        → #adidas-polos
 
-  .env Datei:
-    DISCORD_TOKEN=dein_bot_token
+SNIPEBOT LACOSTE:
+  CHANNEL_LACOSTE             → #lacoste (alles)
+  CHANNEL_LACOSTE_10          → #lacoste-10 (0.01–10€)
+  CHANNEL_LACOSTE_20          → #lacoste-20 (10.01–20€)
+  CHANNEL_LACOSTE_40          → #lacoste-40 (20.01–40€)
+  CHANNEL_LACOSTE_TRACKPANTS  → #lacoste-trackpants
+  CHANNEL_LACOSTE_TRACKSUITS  → #lacoste-tracksuits
+  CHANNEL_LACOSTE_JACKEN      → #lacoste-jacken
+  CHANNEL_LACOSTE_SHIRTS      → #lacoste-shirts
+  CHANNEL_LACOSTE_HOODIES     → #lacoste-hoodies
+  CHANNEL_LACOSTE_POLOS       → #lacoste-polos
 
-    CHANNEL_NIKE=111111111111
-    CHANNEL_NIKE_10=222222222222
-    CHANNEL_NIKE_20=333333333333
-    CHANNEL_ADIDAS=444444444444
-    CHANNEL_ADIDAS_15=555555555555
-    CHANNEL_ADIDAS_40=666666666666
+SNIPEBOT RL:
+  CHANNEL_RL                  → #ralph-lauren (alles)
+  CHANNEL_RL_10               → #ralph-lauren-10 (0.01–10€)
+  CHANNEL_RL_20               → #ralph-lauren-20 (10.01–20€)
+  CHANNEL_RL_40               → #ralph-lauren-40 (20.01–40€)
+  CHANNEL_RL_POLOS            → #ralph-lauren-polos
+  CHANNEL_RL_JACKEN           → #ralph-lauren-jacken
+  CHANNEL_RL_TRACKSUIT        → #ralph-lauren-tracksuit
 
-  Bot starten:
-    python vinted_bot.py
+SNIPEBOT TRIKOTS:
+  CHANNEL_TRIKOTS             → #trikots (alles)
+  CHANNEL_TRIKOTS_HOSE        → #trikot-hose
+  CHANNEL_TRIKOTS_SET         → #trikot-set
 """
 
 import discord
@@ -36,8 +60,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-CHECK_INTERVAL_SECONDS = 40  # 40s – gute Balance zwischen Geschwindigkeit und IP-Schutz
+DISCORD_TOKEN        = os.getenv("DISCORD_TOKEN")
+CHECK_INTERVAL       = 40
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -46,174 +70,167 @@ HEADERS = {
     "Accept-Language": "de-DE,de;q=0.9",
 }
 
-# ─── Kategorien-Konfiguration ─────────────────────────────────────
-# brand_id: Nike=53, Adidas=14
-# price_max: None = kein Limit
+# ─── Vinted Brand IDs ─────────────────────────────────────────────
+BRAND = {
+    "nike":         53,
+    "adidas":       14,
+    "lacoste":      60,
+    "ralph_lauren": 88,
+}
 
-CATEGORIES = [
-    {
-        "name":      "Nike – Alles",
-        "brand_id":  53,
-        "price_max": None,
-        "channel":   int(os.getenv("CHANNEL_NIKE", 0)),
-        "color":     0xF5821F,  # Nike Orange
-    },
-    {
-        "name":      "Nike – unter 10€",
-        "brand_id":  53,
-        "price_max": 10,
-        "channel":   int(os.getenv("CHANNEL_NIKE_10", 0)),
-        "color":     0xF5821F,
-    },
-    {
-        "name":      "Nike – unter 20€",
-        "brand_id":  53,
-        "price_max": 20,
-        "channel":   int(os.getenv("CHANNEL_NIKE_20", 0)),
-        "color":     0xF5821F,
-    },
-    {
-        "name":      "Adidas – Alles",
-        "brand_id":  14,
-        "price_max": None,
-        "channel":   int(os.getenv("CHANNEL_ADIDAS", 0)),
-        "color":     0x000000,  # Adidas Schwarz
-    },
-    {
-        "name":      "Adidas – unter 15€",
-        "brand_id":  14,
-        "price_max": 15,
-        "channel":   int(os.getenv("CHANNEL_ADIDAS_15", 0)),
-        "color":     0x000000,
-    },
-    {
-        "name":      "Adidas – unter 40€",
-        "brand_id":  14,
-        "price_max": 40,
-        "channel":   int(os.getenv("CHANNEL_ADIDAS_40", 0)),
-        "color":     0x000000,
-    },
+# Trikot-Marken (viele Marken gleichzeitig)
+TRIKOT_BRANDS = [53, 14, 60, 88, 316, 103, 254]  # Nike, Adidas, Lacoste, RL, Champion, Puma, Tommy
+
+# Erlaubte Länder: DE, AT, CH, IT, FR, ES
+LAENDER = ["7", "193", "195", "10", "6", "13"]
+
+# ─── Keyword-Filter ───────────────────────────────────────────────
+KW_TRACKPANTS = [
+    "trackpant", "track pant", "jogginghose", "trainingshose", "sporthose",
+    "jogger", "sweatpant", "joggingbroek", "pantalon de survêtement",
+    "pantalon survêtement", "pantalon jogging", "tuta pantalone",
+    "pantalone tuta", "pantalón chandal", "chandal pantalon",
+    "track bottom", "bottoms", "track hose", "trackhose",
 ]
 
-# Gesehene Artikel-IDs pro Kategorie (verhindert Doppelposts)
+KW_TRACKSUITS = [
+    "tracksuit", "trainingsanzug", "jogginganzug", "sportanzug",
+    "tuta", "tuta completa", "survêtement", "survetement",
+    "chandal", "trainingspak", "set", "anzug", "komplett",
+    "track suit", "jogging set", "sport set",
+]
+
+KW_JACKEN = [
+    "jacke", "jacket", "windbreaker", "anorak", "parka",
+    "übergangsjacke", "regenjacke", "trainingsjacke", "zip",
+    "giubbotto", "giubbino", "veste", "blouson", "cazadora",
+    "chaqueta", "coach jacket", "track jacket", "trackjacket",
+    "fleece jacket", "softshell", "half zip", "quarter zip",
+    "full zip", "winterjacke",
+]
+
+KW_SHIRTS = [
+    "t-shirt", "tshirt", "shirt", "longsleeve", "long sleeve",
+    "tee", "maglietta", "maglia", "t shirt", "kurzarm",
+    "top ", "maglie", "chemise", "camiseta", "camisa",
+]
+
+KW_HOODIES = [
+    "hoodie", "hoody", "sweatshirt", "sweater", "pullover",
+    "pulli", "kapuzenpullover", "crewneck", "crew neck",
+    "felpa", "sweat", "sudadera", "trui", "hoodie zip",
+    "half zip hoodie", "quarter zip hoodie",
+]
+
+KW_POLOS = [
+    "polo", "poloshirt", "polo shirt", "polo t-shirt",
+    "polo neck", "polo hemd",
+]
+
+KW_TRIKOTS = [
+    "trikot", "jersey", "maglia", "maillot", "camiseta",
+    "football shirt", "soccer shirt", "fussballtrikot",
+    "fußballtrikot", "sporttrikot", "kit",
+]
+
+KW_TRIKOT_HOSE = [
+    "trikot hose", "sporthose", "shorts trikot", "football shorts",
+    "soccer shorts", "fußballshorts", "pantaloncini",
+]
+
+KW_TRIKOT_SET = [
+    "trikot set", "trikot anzug", "kit komplett", "shirt und hose",
+    "jersey set", "football kit", "soccer kit",
+]
+
+# ─── Verbotene Keywords (Schuhe, Kinder, Accessoires) ────────────
+VERBOTEN = [
+    # Schuhe
+    "schuh","schuhe","sneaker","sneakers","boots","stiefel","slipper",
+    "sandale","sandalen","scarpe","scarpa","schoen","schoenen",
+    "chaussure","chaussures","zapato","zapatos","zapatilla","zapatillas",
+    "air max","air force","dunk","yeezy","campus","gazelle","samba",
+    "superstar","stan smith","ultraboost","nmd","converse","vans",
+    "timberland","ugg","crocs","birkenstock","loafer","pumps","ballerina",
+    # Kinder
+    "kinder","kinderjacke","kinderhose","baby","babykleidung","kleinkind",
+    "junge","mädchen","kids","children","toddler","infant","bambino",
+    "bambina","bambini","neonato","enfant","bébé","bebe","niño","niña",
+    # Accessoires & Sonstiges
+    "tasche","bag","rucksack","backpack","cap","mütze","beanie",
+    "gürtel","belt","schal","socken","socks","handschuhe","gloves",
+    "uhr","watch","schmuck","kette","ring","brille","parfum",
+    "ball","fußball","basketball",
+]
+
+VERBOTEN_GROESSEN = (
+    {str(i) for i in range(16, 36)} |
+    {"86","92","98","104","110","116","122","128","134","140",
+     "146","152","158","164","170"}
+)
+
+ERLAUBTE_GROESSEN = {"xs","s","m","l","xl","xxl","xxxl",
+                     "xs/s","s/m","m/l","l/xl","one size"}
+
+# ─── Kategorien ───────────────────────────────────────────────────
+def ch(key): return int(os.getenv(key, 0))
+
+CATEGORIES = [
+    # ── NIKE ──────────────────────────────────────────────────────
+    {"name":"Nike – Alles",        "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":None,          "channel":ch("CHANNEL_NIKE"),              "color":0xF5821F},
+    {"name":"Nike – 0-10€",        "brands":[BRAND["nike"]], "price_min":0.01,  "price_max":10,    "keywords":None,          "channel":ch("CHANNEL_NIKE_10"),           "color":0xF5821F},
+    {"name":"Nike – 10-20€",       "brands":[BRAND["nike"]], "price_min":10.01, "price_max":20,    "keywords":None,          "channel":ch("CHANNEL_NIKE_20"),           "color":0xF5821F},
+    {"name":"Nike – Trackpants",   "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKPANTS, "channel":ch("CHANNEL_NIKE_TRACKPANTS"),   "color":0xF5821F},
+    {"name":"Nike – Tracksuits",   "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKSUITS, "channel":ch("CHANNEL_NIKE_TRACKSUITS"),   "color":0xF5821F},
+    {"name":"Nike – Jacken",       "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":KW_JACKEN,     "channel":ch("CHANNEL_NIKE_JACKEN"),       "color":0xF5821F},
+    {"name":"Nike – Shirts",       "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":KW_SHIRTS,     "channel":ch("CHANNEL_NIKE_SHIRTS"),       "color":0xF5821F},
+    {"name":"Nike – Hoodies",      "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":KW_HOODIES,    "channel":ch("CHANNEL_NIKE_HOODIES"),      "color":0xF5821F},
+    {"name":"Nike – Polos",        "brands":[BRAND["nike"]], "price_min":None,  "price_max":None,  "keywords":KW_POLOS,      "channel":ch("CHANNEL_NIKE_POLOS"),        "color":0xF5821F},
+    # ── ADIDAS ────────────────────────────────────────────────────
+    {"name":"Adidas – Alles",      "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":None,          "channel":ch("CHANNEL_ADIDAS"),            "color":0x000000},
+    {"name":"Adidas – 0-15€",      "brands":[BRAND["adidas"]], "price_min":0.01,  "price_max":15,    "keywords":None,          "channel":ch("CHANNEL_ADIDAS_15"),         "color":0x000000},
+    {"name":"Adidas – 15-40€",     "brands":[BRAND["adidas"]], "price_min":15.01, "price_max":40,    "keywords":None,          "channel":ch("CHANNEL_ADIDAS_40"),         "color":0x000000},
+    {"name":"Adidas – Trackpants", "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKPANTS, "channel":ch("CHANNEL_ADIDAS_TRACKPANTS"), "color":0x000000},
+    {"name":"Adidas – Tracksuits", "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKSUITS, "channel":ch("CHANNEL_ADIDAS_TRACKSUITS"), "color":0x000000},
+    {"name":"Adidas – Jacken",     "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":KW_JACKEN,     "channel":ch("CHANNEL_ADIDAS_JACKEN"),     "color":0x000000},
+    {"name":"Adidas – Shirts",     "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":KW_SHIRTS,     "channel":ch("CHANNEL_ADIDAS_SHIRTS"),     "color":0x000000},
+    {"name":"Adidas – Hoodies",    "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":KW_HOODIES,    "channel":ch("CHANNEL_ADIDAS_HOODIES"),    "color":0x000000},
+    {"name":"Adidas – Polos",      "brands":[BRAND["adidas"]], "price_min":None,  "price_max":None,  "keywords":KW_POLOS,      "channel":ch("CHANNEL_ADIDAS_POLOS"),      "color":0x000000},
+    # ── LACOSTE ───────────────────────────────────────────────────
+    {"name":"Lacoste – Alles",      "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":None,          "channel":ch("CHANNEL_LACOSTE"),            "color":0x00A850},
+    {"name":"Lacoste – 0-10€",      "brands":[BRAND["lacoste"]], "price_min":0.01,  "price_max":10,    "keywords":None,          "channel":ch("CHANNEL_LACOSTE_10"),         "color":0x00A850},
+    {"name":"Lacoste – 10-20€",     "brands":[BRAND["lacoste"]], "price_min":10.01, "price_max":20,    "keywords":None,          "channel":ch("CHANNEL_LACOSTE_20"),         "color":0x00A850},
+    {"name":"Lacoste – 20-40€",     "brands":[BRAND["lacoste"]], "price_min":20.01, "price_max":40,    "keywords":None,          "channel":ch("CHANNEL_LACOSTE_40"),         "color":0x00A850},
+    {"name":"Lacoste – Trackpants", "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKPANTS, "channel":ch("CHANNEL_LACOSTE_TRACKPANTS"), "color":0x00A850},
+    {"name":"Lacoste – Tracksuits", "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKSUITS, "channel":ch("CHANNEL_LACOSTE_TRACKSUITS"), "color":0x00A850},
+    {"name":"Lacoste – Jacken",     "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":KW_JACKEN,     "channel":ch("CHANNEL_LACOSTE_JACKEN"),     "color":0x00A850},
+    {"name":"Lacoste – Shirts",     "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":KW_SHIRTS,     "channel":ch("CHANNEL_LACOSTE_SHIRTS"),     "color":0x00A850},
+    {"name":"Lacoste – Hoodies",    "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":KW_HOODIES,    "channel":ch("CHANNEL_LACOSTE_HOODIES"),    "color":0x00A850},
+    {"name":"Lacoste – Polos",      "brands":[BRAND["lacoste"]], "price_min":None,  "price_max":None,  "keywords":KW_POLOS,      "channel":ch("CHANNEL_LACOSTE_POLOS"),      "color":0x00A850},
+    # ── RALPH LAUREN ──────────────────────────────────────────────
+    {"name":"Ralph Lauren – Alles",     "brands":[BRAND["ralph_lauren"]], "price_min":None,  "price_max":None,  "keywords":None,          "channel":ch("CHANNEL_RL"),            "color":0x002868},
+    {"name":"Ralph Lauren – 0-10€",     "brands":[BRAND["ralph_lauren"]], "price_min":0.01,  "price_max":10,    "keywords":None,          "channel":ch("CHANNEL_RL_10"),         "color":0x002868},
+    {"name":"Ralph Lauren – 10-20€",    "brands":[BRAND["ralph_lauren"]], "price_min":10.01, "price_max":20,    "keywords":None,          "channel":ch("CHANNEL_RL_20"),         "color":0x002868},
+    {"name":"Ralph Lauren – 20-40€",    "brands":[BRAND["ralph_lauren"]], "price_min":20.01, "price_max":40,    "keywords":None,          "channel":ch("CHANNEL_RL_40"),         "color":0x002868},
+    {"name":"Ralph Lauren – Polos",     "brands":[BRAND["ralph_lauren"]], "price_min":None,  "price_max":None,  "keywords":KW_POLOS,      "channel":ch("CHANNEL_RL_POLOS"),      "color":0x002868},
+    {"name":"Ralph Lauren – Jacken",    "brands":[BRAND["ralph_lauren"]], "price_min":None,  "price_max":None,  "keywords":KW_JACKEN,     "channel":ch("CHANNEL_RL_JACKEN"),     "color":0x002868},
+    {"name":"Ralph Lauren – Tracksuit", "brands":[BRAND["ralph_lauren"]], "price_min":None,  "price_max":None,  "keywords":KW_TRACKSUITS, "channel":ch("CHANNEL_RL_TRACKSUIT"),  "color":0x002868},
+    # ── TRIKOTS (alle Marken) ─────────────────────────────────────
+    {"name":"Trikots – Alles",  "brands":TRIKOT_BRANDS, "price_min":None, "price_max":None, "keywords":KW_TRIKOTS,     "channel":ch("CHANNEL_TRIKOTS"),      "color":0x09B1BA},
+    {"name":"Trikots – Hose",   "brands":TRIKOT_BRANDS, "price_min":None, "price_max":None, "keywords":KW_TRIKOT_HOSE, "channel":ch("CHANNEL_TRIKOTS_HOSE"), "color":0x09B1BA},
+    {"name":"Trikots – Set",    "brands":TRIKOT_BRANDS, "price_min":None, "price_max":None, "keywords":KW_TRIKOT_SET,  "channel":ch("CHANNEL_TRIKOTS_SET"),  "color":0x09B1BA},
+]
+
 seen_ids: dict[str, set[int]] = {cat["name"]: set() for cat in CATEGORIES}
 first_run = True
 
-# ─── Nur Kleidung erlauben (Whitelist-Ansatz) ─────────────────────
-# Vinted Kategorie-IDs die ERLAUBT sind (nur Kleidung)
-# Herren, Damen, Kinder Kleidung – KEINE Schuhe, Taschen, Accessoires
-ERLAUBTE_KATEGORIEN = {
-    # Herren Kleidung
-    "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
-    "15", "16", "17", "18", "19", "20", "21", "22", "1175",
-    # Damen Kleidung
-    "1037", "1038", "1039", "1040", "1041", "1042", "1043",
-    "1044", "1045", "1046", "1047", "1048", "1049", "1050",
-    # Kinder Kleidung → ENTFERNT
-}
-
-# Keywords die erlaubte Kleidungsstücke beschreiben
-KLEIDUNGS_KEYWORDS = [
-    # Oberteile
-    "hoodie", "hoody", "sweatshirt", "sweater", "pullover", "pulli",
-    "t-shirt", "tshirt", "shirt", "longsleeve", "top", "polo",
-    # Jacken & Mäntel
-    "jacke", "jacket", "mantel", "coat", "parka", "windbreaker",
-    "anorak", "fleece", "daunenjacke", "regenjacke", "übergangsjacke",
-    "veste", "jas",
-    # Hosen
-    "hose", "jeans", "jogger", "jogginghose", "trainingshose",
-    "shorts", "short", "bermuda", "chino", "cargo", "leggings",
-    "broek", "pantalon",
-    # Weitere Kleidung
-    "hemd", "bluse", "kleid", "rock", "overall", "jumpsuit",
-    "body", "unterhemd", "tank", "trikot", "jersey", "uniform",
-    "anzug", "suit", "blazer", "sakko", "weste",
-    # Sport
-    "trainingsanzug", "sportanzug", "tracksuit", "trainingsjacke",
-    "sporthose", "sportshirt", "trikot",
-]
-
-# Keywords die NICHT erlaubt sind (Schuhe, Gegenstände etc.)
-VERBOTEN_KEYWORDS = [
-    # Schuhe (alle Sprachen)
-    "schuh", "schuhe", "sneaker", "sneakers", "boots", "stiefel",
-    "turnschuh", "laufschuh", "slipper", "sandale", "sandalen",
-    "scarpe", "scarpa", "schoen", "schoenen", "chaussure", "zapatos",
-    "loafer", "pumps", "ballerina", "clogs", "hausschuh",
-    "air max", "air force", "dunk", "yeezy", "campus", "gazelle",
-    "samba", "superstar", "stan smith", "ultraboost", "nmd",
-    "574", "990", "992", "converse", "vans", "timberland", "ugg",
-    # Sport-Gegenstände
-    "ball", "fußball", "basketball", "handball", "volleyball",
-    "tennisball", "rugby", "puck",
-    # Taschen & Accessoires
-    "tasche", "bag", "rucksack", "backpack", "handtasche",
-    "geldbeutel", "portemonnaie", "wallet", "gürteltasche",
-    "cap", "mütze", "beanie", "hut", "gürtel", "belt",
-    "schal", "handschuhe", "socken", "socks", "unterwäsche",
-    # Sonstiges
-    "uhr", "watch", "schmuck", "kette", "ring", "armband",
-    "brille", "sunglasses", "parfum", "cologne",
-    # Kinder
-    "kinder", "baby", "bambino", "bambina", "enfant", "kind",
-    "junior", "kids", "maat 1", "maat 2", "taille 1", "taille 2",
-]
-
-# Schuhgrößen (numerisch, EU) → fast immer Schuhe
-SCHUH_GROESSEN = {str(i) for i in range(16, 50)}
-
-
-def ist_kleidung(item: dict) -> bool:
-    """Gibt True zurück wenn der Artikel Kleidung ist – alles andere wird geblockt."""
-    titel     = item.get("title", "").lower()
-    groesse   = item.get("size_title", "").strip()
-    kat_id    = str(item.get("catalog_id", ""))
-
-    # 0. Land prüfen
-    land = item.get("user", {}).get("country_iso", "")
-    if land and land.upper() not in ERLAUBTE_LAENDER:
-        return False
-
-    # 1. Verbotene Keywords im Titel → sofort blocken
-    if any(kw in titel for kw in VERBOTEN_KEYWORDS):
-        return False
-
-    # 2. Numerische Größe (z.B. 19, 24, 42, 44) → wahrscheinlich Schuh → blocken
-    if groesse in SCHUH_GROESSEN:
-        return False
-
-    # 3. Erlaubte Vinted-Kategorie → durchlassen
-    if kat_id in ERLAUBTE_KATEGORIEN:
-        return True
-
-    # 4. Kleidungs-Keyword im Titel → durchlassen
-    if any(kw in titel for kw in KLEIDUNGS_KEYWORDS):
-        return True
-
-    # 5. Größen die typisch für Kleidung sind → durchlassen
-    kleidungs_groessen = {"xs", "s", "m", "l", "xl", "xxl", "xxxl",
-                          "xs/s", "s/m", "m/l", "l/xl", "one size"}
-    if groesse.lower() in kleidungs_groessen:
-        return True
-
-    # 6. Im Zweifel: blocken
-    return False
-
-
 # ─── Hilfsfunktionen ──────────────────────────────────────────────
-
-# Erlaubte Länder-Codes
-ERLAUBTE_LAENDER = {"DE", "AT", "CH", "IT", "FR", "ES"}
-
-def build_url(brand_id: int, price_max: int | None) -> str:
-    # Vinted Länder-IDs: DE=7, AT=193, CH=195, IT=10, FR=6, ES=13
-    laender_ids = ["7", "193", "195", "10", "6", "13"]
-    params = [
-        f"brand_ids[]={brand_id}",
-        "order=newest_first",
-        "per_page=30",
-    ] + [f"country_ids[]={lid}" for lid in laender_ids]
+def build_url(brand_ids: list[int], price_min: float | None, price_max: float | None) -> str:
+    params = ["order=newest_first", "per_page=30"]
+    for bid in brand_ids:
+        params.append(f"brand_ids[]={bid}")
+    for lid in LAENDER:
+        params.append(f"country_ids[]={lid}")
     if price_max is not None:
         params.append(f"price_to={price_max}")
     return "https://www.vinted.de/api/v2/catalog/items?" + "&".join(params)
@@ -228,11 +245,10 @@ def get_cookies() -> dict:
         return {}
 
 
-def fetch_items(brand_id: int, price_max: int | None) -> list[dict]:
-    url = build_url(brand_id, price_max)
-    cookies = get_cookies()
+def fetch_items(brand_ids: list[int], price_min, price_max) -> list[dict]:
     try:
-        r = requests.get(url, headers=HEADERS, cookies=cookies, timeout=15)
+        r = requests.get(build_url(brand_ids, price_min, price_max),
+                         headers=HEADERS, cookies=get_cookies(), timeout=15)
         r.raise_for_status()
         return r.json().get("items", [])
     except Exception as e:
@@ -240,76 +256,108 @@ def fetch_items(brand_id: int, price_max: int | None) -> list[dict]:
         return []
 
 
+def passt_preis(item: dict, price_min, price_max) -> bool:
+    try:
+        preis = float(item.get("price", {}).get("amount", 0))
+        if price_min is not None and preis < price_min:
+            return False
+        if price_max is not None and preis > price_max:
+            return False
+        return True
+    except:
+        return True
+
+
+def passt_keyword(item: dict, keywords: list | None) -> bool:
+    if keywords is None:
+        return True
+    titel = item.get("title", "").lower()
+    return any(kw in titel for kw in keywords)
+
+
+def ist_kleidung(item: dict) -> bool:
+    titel   = item.get("title", "").lower()
+    groesse = item.get("size_title", "").strip().lower()
+
+    # Verbotene Keywords
+    if any(kw in titel for kw in VERBOTEN):
+        return False
+    # Verbotene Größen (Schuh/Kinder)
+    if groesse in VERBOTEN_GROESSEN:
+        return False
+    # Land prüfen
+    land = item.get("user", {}).get("country_iso", "").upper()
+    if land and land not in {"DE","AT","CH","IT","FR","ES"}:
+        return False
+    return True
+
+
 def build_embed(item: dict, cat: dict) -> discord.Embed:
-    title     = item.get("title", "Unbekannt")
-    price     = item.get("price", {})
-    price_str = f"{price.get('amount', '?')} {price.get('currency_code', 'EUR')}"
-    item_url  = f"https://www.vinted.de/items/{item.get('id')}"
-    photos    = item.get("photos", [])
-    img_url   = photos[0].get("url") if photos else None
+    title    = item.get("title", "Unbekannt")
+    price    = item.get("price", {})
+    pstr     = f"{price.get('amount','?')} {price.get('currency_code','EUR')}"
+    url      = f"https://www.vinted.de/items/{item.get('id')}"
+    photos   = item.get("photos", [])
+    img      = photos[0].get("url") if photos else None
 
-    embed = discord.Embed(
-        title=f"🛍️ {title}",
-        url=item_url,
-        color=cat["color"],
-        description=f"**Kategorie:** {cat['name']}"
-    )
-    embed.add_field(name="💶 Preis",   value=price_str,                       inline=True)
-    embed.add_field(name="📏 Größe",   value=item.get("size_title", "—"),     inline=True)
-    embed.add_field(name="✨ Zustand", value=item.get("status", "—"),         inline=True)
-    embed.add_field(name="👤 Verkäufer", value=item.get("user", {}).get("login", "—"), inline=True)
-    embed.add_field(name="🔗 Artikel", value=f"[Auf Vinted ansehen]({item_url})", inline=False)
-
-    if img_url:
-        embed.set_image(url=img_url)
-    embed.set_footer(text=f"Vinted Bot • {cat['name']}")
-    return embed
+    e = discord.Embed(title=f"🛍️ {title}", url=url, color=cat["color"],
+                      description=f"**{cat['name']}**")
+    e.add_field(name="💶 Preis",     value=pstr,                                  inline=True)
+    e.add_field(name="📏 Größe",     value=item.get("size_title","—"),            inline=True)
+    e.add_field(name="✨ Zustand",   value=item.get("status","—"),                inline=True)
+    e.add_field(name="👤 Verkäufer", value=item.get("user",{}).get("login","—"),  inline=True)
+    e.add_field(name="🔗 Artikel",   value=f"[Auf Vinted ansehen]({url})",        inline=False)
+    if img:
+        e.set_image(url=img)
+    e.set_footer(text=f"Vinted Snipebot • {cat['name']}")
+    return e
 
 
-# ─── Discord Client ───────────────────────────────────────────────
-
+# ─── Discord ──────────────────────────────────────────────────────
 intents = discord.Intents.default()
 client  = discord.Client(intents=intents)
 
 
-@tasks.loop(seconds=CHECK_INTERVAL_SECONDS)
-async def check_all_categories():
+@tasks.loop(seconds=CHECK_INTERVAL)
+async def check_all():
     global first_run
-
-    cookies = get_cookies()  # Einmal pro Runde holen
 
     for cat in CATEGORIES:
         channel = client.get_channel(cat["channel"])
         if not channel:
-            print(f"[Warnung] Channel für '{cat['name']}' nicht gefunden (ID: {cat['channel']})")
             continue
 
-        items = fetch_items(cat["brand_id"], cat["price_max"])
+        items    = fetch_items(cat["brands"], cat["price_min"], cat["price_max"])
         new_items = []
 
         for item in items:
             iid = item.get("id")
-            if iid and iid not in seen_ids[cat["name"]]:
-                seen_ids[cat["name"]].add(iid)
-                if not first_run and ist_kleidung(item):
-                    new_items.append(item)
+            if not iid or iid in seen_ids[cat["name"]]:
+                continue
+            seen_ids[cat["name"]].add(iid)
+            if first_run:
+                continue
+            if not ist_kleidung(item):
+                continue
+            if not passt_preis(item, cat["price_min"], cat["price_max"]):
+                continue
+            if not passt_keyword(item, cat["keywords"]):
+                continue
+            new_items.append(item)
 
+        for item in new_items:
+            await channel.send(embed=build_embed(item, cat))
         if new_items:
             print(f"[{cat['name']}] {len(new_items)} neue Artikel")
-            for item in new_items:
-                await channel.send(embed=build_embed(item, cat))
 
     first_run = False
 
 
 @client.event
 async def on_ready():
-    print(f"✅ Bot gestartet als: {client.user}")
-    print(f"📦 {len(CATEGORIES)} Kategorien aktiv:")
-    for cat in CATEGORIES:
-        limit = f"unter {cat['price_max']}€" if cat["price_max"] else "kein Preislimit"
-        print(f"   • {cat['name']} ({limit}) → Channel {cat['channel']}")
-    check_all_categories.start()
+    print(f"✅ Snipebot online als {client.user}")
+    print(f"📦 {len(CATEGORIES)} Kategorien aktiv")
+    check_all.start()
 
 
 client.run(DISCORD_TOKEN)
