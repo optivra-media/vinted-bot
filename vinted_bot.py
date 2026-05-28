@@ -9,7 +9,8 @@ load_dotenv()
 
 DISCORD_TOKEN  = os.getenv("DISCORD_TOKEN")
 PROXY_URL      = os.getenv("PROXY_URL")
-CHECK_INTERVAL = 40
+CHECK_INTERVAL = 300  # 5 Minuten pro Runde
+REQUEST_DELAY  = 7    # 7 Sekunden zwischen jeder Anfrage
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -156,8 +157,17 @@ def _fetch(brand_ids, pmax):
         "X-Requested-With": "XMLHttpRequest",
     }, params=params, proxies=PROXIES, timeout=15)
     r.raise_for_status()
-    data = r.json()
-    return data.get("items", [])
+    if not r.text or r.text.strip() == "":
+        print(f"[Warnung] Leere Antwort (Status {r.status_code}) – Cookie wird erneuert")
+        refresh_session()
+        return []
+    try:
+        data = r.json()
+        return data.get("items", [])
+    except Exception as e:
+        print(f"[Warnung] Kein JSON (Status {r.status_code}): {r.text[:200]}")
+        refresh_session()
+        return []
 
 async def fetch_items(brand_ids, pmax):
     try:
@@ -225,6 +235,7 @@ async def check_all():
         if cat["ch"] == 0: continue
         channel = client.get_channel(cat["ch"])
         if not channel: continue
+        await asyncio.sleep(REQUEST_DELAY)
         items = await fetch_items(cat["brands"], cat["pmax"])
         for item in items:
             iid = item.get("id")
