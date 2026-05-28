@@ -9,8 +9,8 @@ load_dotenv()
 
 DISCORD_TOKEN  = os.getenv("DISCORD_TOKEN")
 PROXY_URL      = os.getenv("PROXY_URL")
-CHECK_INTERVAL = 300  # 5 Minuten pro Runde
-REQUEST_DELAY  = 7    # 7 Sekunden zwischen jeder Anfrage
+CHECK_INTERVAL = 1200  # 20 Minuten pro Runde (38 × 30s = 1140s)
+REQUEST_DELAY  = 30    # 30 Sekunden zwischen jeder Anfrage
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -123,17 +123,31 @@ COOKIE_REFRESH = 5  # Alle 5 Durchläufe neuen Cookie holen
 def refresh_session():
     global cookie_session
     s = requests.Session()
-    s.get("https://www.vinted.de", headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-    }, proxies=PROXIES, timeout=10)
+    if not VINTED_TOKEN:
+        s.get("https://www.vinted.de", headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+            "Connection": "keep-alive",
+        }, proxies=PROXIES, timeout=10)
     cookie_session = s
-    print("[Info] Cookie erneuert")
+    print("[Info] Session erneuert")
+
+VINTED_TOKEN = os.getenv("VINTED_TOKEN")  # Bearer eyJhbGc...
+
+API_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+    "Referer": "https://www.vinted.de/",
+    "Origin": "https://www.vinted.de",
+    "Connection": "keep-alive",
+    "X-Requested-With": "XMLHttpRequest",
+}
+if VINTED_TOKEN:
+    API_HEADERS["Authorization"] = VINTED_TOKEN
 
 # ─── HTTP (läuft in eigenem Thread) ──────────────────────────────
 def _fetch(brand_ids, pmax):
@@ -145,17 +159,7 @@ def _fetch(brand_ids, pmax):
     for l in LAENDER:   params.append(("country_ids[]", l))
     if pmax: params.append(("price_to", str(pmax)))
     url = "https://www.vinted.de/api/v2/catalog/items"
-    r = cookie_session.get(url, headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer": "https://www.vinted.de/",
-        "Origin": "https://www.vinted.de",
-        "Connection": "keep-alive",
-        "X-Requested-With": "XMLHttpRequest",
-    }, params=params, proxies=PROXIES, timeout=15)
+    r = cookie_session.get(url, headers=API_HEADERS, params=params, proxies=PROXIES, timeout=15)
     r.raise_for_status()
     if not r.text or r.text.strip() == "":
         print(f"[Warnung] Leere Antwort (Status {r.status_code}) – Cookie wird erneuert")
