@@ -9,8 +9,8 @@ load_dotenv()
 
 DISCORD_TOKEN  = os.getenv("DISCORD_TOKEN")
 PROXY_URL      = os.getenv("PROXY_URL")
-CHECK_INTERVAL = 1200  # 20 Minuten pro Runde (38 × 30s = 1140s)
-REQUEST_DELAY  = 30    # 30 Sekunden zwischen jeder Anfrage
+CHECK_INTERVAL = 30   # 30 Sekunden
+REQUEST_DELAY  = 3    # 3 Sekunden zwischen den 4 Marken-Anfragen
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -229,28 +229,53 @@ client  = discord.Client(intents=intents)
 @tasks.loop(seconds=CHECK_INTERVAL)
 async def check_all():
     global first_run, cookie_counter
-    
-    # Cookie alle 5 Runden erneuern
+
     cookie_counter += 1
     if cookie_counter >= COOKIE_REFRESH:
         cookie_counter = 0
         await asyncio.to_thread(refresh_session)
-    for cat in CATEGORIES:
-        if cat["ch"] == 0: continue
-        channel = client.get_channel(cat["ch"])
-        if not channel: continue
+
+    # Nur 4 API Anfragen statt 38 – lokal auf Channels verteilen
+    brand_requests = [
+        ([NIKE],    None),
+        ([ADIDAS],  None),
+        ([LACOSTE], None),
+        ([RL],      None),
+        (TRIKOT_BRANDS, None),
+    ]
+
+    for brand_ids, pmax in brand_requests:
         await asyncio.sleep(REQUEST_DELAY)
-        items = await fetch_items(cat["brands"], cat["pmax"])
+        items = await fetch_items(brand_ids, pmax)
+
         for item in items:
             iid = item.get("id")
-            if not iid or iid in seen_ids[cat["name"]]: continue
-            seen_ids[cat["name"]].add(iid)
-            if first_run: continue
-            if not kleidung_ok(item): continue
-            if not preis_ok(item, cat["pmin"], cat["pmax"]): continue
-            if not keyword_ok(item, cat["kw"]): continue
-            await channel.send(embed=build_embed(item, cat))
-            print(f"✅ [{cat['name']}] {item.get('title')}")
+
+            # Artikel auf alle passenden Kategorien verteilen
+            for cat in CATEGORIES:
+                if cat["brands"] != brand_ids and not (
+                    len(cat["brands"]) > 1 and brand_ids == TRIKOT_BRANDS
+                ):
+                    continue
+                if cat["ch"] == 0:
+                    continue
+                channel = client.get_channel(cat["ch"])
+                if not channel:
+                    continue
+                if iid in seen_ids[cat["name"]]:
+                    continue
+                seen_ids[cat["name"]].add(iid)
+                if first_run:
+                    continue
+                if not kleidung_ok(item):
+                    continue
+                if not preis_ok(item, cat["pmin"], cat["pmax"]):
+                    continue
+                if not keyword_ok(item, cat["kw"]):
+                    continue
+                await channel.send(embed=build_embed(item, cat))
+                print(f"✅ [{cat['name']}] {item.get('title')}")
+
     first_run = False
 
 @client.event
