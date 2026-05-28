@@ -115,17 +115,13 @@ CATEGORIES = [
 
 seen_ids: dict[str, set[int]] = {cat["name"]: set() for cat in CATEGORIES}
 first_run = True
+cookie_session = None
+cookie_counter = 0
+COOKIE_REFRESH = 5  # Alle 5 Durchläufe neuen Cookie holen
 
-# ─── HTTP (läuft in eigenem Thread) ──────────────────────────────
-def _fetch(brand_ids, pmax):
-    params = [("order","newest_first"),("per_page","30")]
-    for b in brand_ids: params.append(("brand_ids[]", str(b)))
-    for l in LAENDER:   params.append(("country_ids[]", l))
-    if pmax: params.append(("price_to", str(pmax)))
-    url = "https://www.vinted.de/api/v2/catalog/items"
-
+def refresh_session():
+    global cookie_session
     s = requests.Session()
-    # Erst Startseite aufrufen um echte Cookies zu bekommen
     s.get("https://www.vinted.de", headers={
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -135,9 +131,20 @@ def _fetch(brand_ids, pmax):
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
     }, proxies=PROXIES, timeout=10)
+    cookie_session = s
+    print("[Info] Cookie erneuert")
 
-    # Dann API aufrufen mit den Cookies
-    r = s.get(url, headers={
+# ─── HTTP (läuft in eigenem Thread) ──────────────────────────────
+def _fetch(brand_ids, pmax):
+    global cookie_session
+    if cookie_session is None:
+        refresh_session()
+    params = [("order","newest_first"),("per_page","30")]
+    for b in brand_ids: params.append(("brand_ids[]", str(b)))
+    for l in LAENDER:   params.append(("country_ids[]", l))
+    if pmax: params.append(("price_to", str(pmax)))
+    url = "https://www.vinted.de/api/v2/catalog/items"
+    r = cookie_session.get(url, headers={
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json, text/plain, */*",
@@ -149,7 +156,8 @@ def _fetch(brand_ids, pmax):
         "X-Requested-With": "XMLHttpRequest",
     }, params=params, proxies=PROXIES, timeout=15)
     r.raise_for_status()
-    return r.json().get("items", [])
+    data = r.json()
+    return data.get("items", [])
 
 async def fetch_items(brand_ids, pmax):
     try:
@@ -206,7 +214,13 @@ client  = discord.Client(intents=intents)
 
 @tasks.loop(seconds=CHECK_INTERVAL)
 async def check_all():
-    global first_run
+    global first_run, cookie_counter
+    
+    # Cookie alle 5 Runden erneuern
+    cookie_counter += 1
+    if cookie_counter >= COOKIE_REFRESH:
+        cookie_counter = 0
+        await asyncio.to_thread(refresh_session)
     for cat in CATEGORIES:
         if cat["ch"] == 0: continue
         channel = client.get_channel(cat["ch"])
