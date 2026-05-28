@@ -99,6 +99,27 @@ CATEGORIES = [
 seen_ids: dict[str, set[int]] = {cat["name"]: set() for cat in CATEGORIES}
 first_run = True
 
+# ─── Schuhe rausfiltern ───────────────────────────────────────────
+SCHUH_KEYWORDS = [
+    "schuh", "schuhe", "sneaker", "sneakers", "boots", "stiefel",
+    "turnschuh", "laufschuh", "slipper", "sandale", "sandalen",
+    "loafer", "mokassin", "ballerina", "pumps", "absatz",
+    "air max", "air force", "yeezy", "jordan", "dunk", "blazer shoe",
+    "ultraboost", "superstar", "stan smith", "nmd", "forum low",
+    "574", "990", "992", "1080", "chuck", "converse", "vans",
+    "timberland", "ugg", "crocs", "birkenstock", "clogs"
+]
+
+def ist_schuh(item: dict) -> bool:
+    titel = item.get("title", "").lower()
+    kategorie = str(item.get("catalog_id", ""))
+    # Vinted Schuh-Kategorie IDs (Herren+Damen Schuhe)
+    schuh_kategorien = {"196", "197", "198", "199", "200", "201", "202",
+                        "203", "204", "205", "1037", "1038"}
+    if kategorie in schuh_kategorien:
+        return True
+    return any(keyword in titel for keyword in SCHUH_KEYWORDS)
+
 
 # ─── Hilfsfunktionen ──────────────────────────────────────────────
 
@@ -185,7 +206,7 @@ async def check_all_categories():
             iid = item.get("id")
             if iid and iid not in seen_ids[cat["name"]]:
                 seen_ids[cat["name"]].add(iid)
-                if not first_run:
+                if not first_run and not ist_schuh(item):
                     new_items.append(item)
 
         if new_items:
