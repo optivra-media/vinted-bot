@@ -91,13 +91,16 @@ KW_TRACKPANTS = [
     "pantalon survêtement", "pantalon jogging", "tuta pantalone",
     "pantalone tuta", "pantalón chandal", "chandal pantalon",
     "track bottom", "bottoms", "track hose", "trackhose",
+    "hose", "pant", "broek", "pantalon", "pantalone", "pantalones",
+    "jogging", "training pant", "sport pant",
 ]
 
 KW_TRACKSUITS = [
     "tracksuit", "trainingsanzug", "jogginganzug", "sportanzug",
     "tuta", "tuta completa", "survêtement", "survetement",
-    "chandal", "trainingspak", "set", "anzug", "komplett",
-    "track suit", "jogging set", "sport set",
+    "chandal", "trainingspak", "track suit", "jogging set", "sport set",
+    "anzug", "komplett set", "full set", "set completo", "ensemble",
+    "2 teilig", "2-teilig", "oberteil hose", "jacket pant",
 ]
 
 KW_JACKEN = [
@@ -105,42 +108,46 @@ KW_JACKEN = [
     "übergangsjacke", "regenjacke", "trainingsjacke", "zip",
     "giubbotto", "giubbino", "veste", "blouson", "cazadora",
     "chaqueta", "coach jacket", "track jacket", "trackjacket",
-    "fleece jacket", "softshell", "half zip", "quarter zip",
-    "full zip", "winterjacke",
+    "fleece", "softshell", "half zip", "quarter zip", "full zip",
+    "winterjacke", "outdoorjacke", "sportjacke", "mantel",
 ]
 
 KW_SHIRTS = [
     "t-shirt", "tshirt", "shirt", "longsleeve", "long sleeve",
     "tee", "maglietta", "maglia", "t shirt", "kurzarm",
-    "top ", "maglie", "chemise", "camiseta", "camisa",
+    "top", "maglie", "chemise", "camiseta", "camisa",
+    "oberteil", "kurzarmshirt", "sportshirt",
 ]
 
 KW_HOODIES = [
     "hoodie", "hoody", "sweatshirt", "sweater", "pullover",
     "pulli", "kapuzenpullover", "crewneck", "crew neck",
-    "felpa", "sweat", "sudadera", "trui", "hoodie zip",
-    "half zip hoodie", "quarter zip hoodie",
+    "felpa", "sweat", "sudadera", "trui",
+    "kapuze", "sweatjacke", "fleece pullover",
 ]
 
 KW_POLOS = [
     "polo", "poloshirt", "polo shirt", "polo t-shirt",
-    "polo neck", "polo hemd",
+    "polo neck", "polo hemd", "polo top",
 ]
 
 KW_TRIKOTS = [
     "trikot", "jersey", "maglia", "maillot", "camiseta",
     "football shirt", "soccer shirt", "fussballtrikot",
-    "fußballtrikot", "sporttrikot", "kit",
+    "fußballtrikot", "sporttrikot", "kit", "spielertrikot",
+    "heimtrikot", "auswärtstrikot", "matchworn",
 ]
 
 KW_TRIKOT_HOSE = [
     "trikot hose", "sporthose", "shorts trikot", "football shorts",
-    "soccer shorts", "fußballshorts", "pantaloncini",
+    "soccer shorts", "fußballshorts", "pantaloncini", "sport shorts",
+    "kurze hose", "short", "shorts",
 ]
 
 KW_TRIKOT_SET = [
     "trikot set", "trikot anzug", "kit komplett", "shirt und hose",
-    "jersey set", "football kit", "soccer kit",
+    "jersey set", "football kit", "soccer kit", "trikot komplett",
+    "heim set", "auswärts set",
 ]
 
 # ─── Verbotene Keywords (Schuhe, Kinder, Accessoires) ────────────
@@ -351,7 +358,6 @@ async def check_all():
             print(f"[{cat['name']}] {len(new_items)} neue Artikel")
 
     first_run = False
-
 
 @client.event
 async def on_ready():
