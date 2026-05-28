@@ -99,36 +99,121 @@ CATEGORIES = [
 seen_ids: dict[str, set[int]] = {cat["name"]: set() for cat in CATEGORIES}
 first_run = True
 
-# ─── Schuhe rausfiltern ───────────────────────────────────────────
-SCHUH_KEYWORDS = [
-    "schuh", "schuhe", "sneaker", "sneakers", "boots", "stiefel",
-    "turnschuh", "laufschuh", "slipper", "sandale", "sandalen",
-    "loafer", "mokassin", "ballerina", "pumps", "absatz",
-    "air max", "air force", "yeezy", "jordan", "dunk", "blazer shoe",
-    "ultraboost", "superstar", "stan smith", "nmd", "forum low",
-    "574", "990", "992", "1080", "chuck", "converse", "vans",
-    "timberland", "ugg", "crocs", "birkenstock", "clogs"
+# ─── Nur Kleidung erlauben (Whitelist-Ansatz) ─────────────────────
+# Vinted Kategorie-IDs die ERLAUBT sind (nur Kleidung)
+# Herren, Damen, Kinder Kleidung – KEINE Schuhe, Taschen, Accessoires
+ERLAUBTE_KATEGORIEN = {
+    # Herren Kleidung
+    "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
+    "15", "16", "17", "18", "19", "20", "21", "22", "1175",
+    # Damen Kleidung
+    "1037", "1038", "1039", "1040", "1041", "1042", "1043",
+    "1044", "1045", "1046", "1047", "1048", "1049", "1050",
+    # Kinder Kleidung → ENTFERNT
+}
+
+# Keywords die erlaubte Kleidungsstücke beschreiben
+KLEIDUNGS_KEYWORDS = [
+    # Oberteile
+    "hoodie", "hoody", "sweatshirt", "sweater", "pullover", "pulli",
+    "t-shirt", "tshirt", "shirt", "longsleeve", "top", "polo",
+    # Jacken & Mäntel
+    "jacke", "jacket", "mantel", "coat", "parka", "windbreaker",
+    "anorak", "fleece", "daunenjacke", "regenjacke", "übergangsjacke",
+    "veste", "jas",
+    # Hosen
+    "hose", "jeans", "jogger", "jogginghose", "trainingshose",
+    "shorts", "short", "bermuda", "chino", "cargo", "leggings",
+    "broek", "pantalon",
+    # Weitere Kleidung
+    "hemd", "bluse", "kleid", "rock", "overall", "jumpsuit",
+    "body", "unterhemd", "tank", "trikot", "jersey", "uniform",
+    "anzug", "suit", "blazer", "sakko", "weste",
+    # Sport
+    "trainingsanzug", "sportanzug", "tracksuit", "trainingsjacke",
+    "sporthose", "sportshirt", "trikot",
 ]
 
-def ist_schuh(item: dict) -> bool:
-    titel = item.get("title", "").lower()
-    kategorie = str(item.get("catalog_id", ""))
-    # Vinted Schuh-Kategorie IDs (Herren+Damen Schuhe)
-    schuh_kategorien = {"196", "197", "198", "199", "200", "201", "202",
-                        "203", "204", "205", "1037", "1038"}
-    if kategorie in schuh_kategorien:
+# Keywords die NICHT erlaubt sind (Schuhe, Gegenstände etc.)
+VERBOTEN_KEYWORDS = [
+    # Schuhe (alle Sprachen)
+    "schuh", "schuhe", "sneaker", "sneakers", "boots", "stiefel",
+    "turnschuh", "laufschuh", "slipper", "sandale", "sandalen",
+    "scarpe", "scarpa", "schoen", "schoenen", "chaussure", "zapatos",
+    "loafer", "pumps", "ballerina", "clogs", "hausschuh",
+    "air max", "air force", "dunk", "yeezy", "campus", "gazelle",
+    "samba", "superstar", "stan smith", "ultraboost", "nmd",
+    "574", "990", "992", "converse", "vans", "timberland", "ugg",
+    # Sport-Gegenstände
+    "ball", "fußball", "basketball", "handball", "volleyball",
+    "tennisball", "rugby", "puck",
+    # Taschen & Accessoires
+    "tasche", "bag", "rucksack", "backpack", "handtasche",
+    "geldbeutel", "portemonnaie", "wallet", "gürteltasche",
+    "cap", "mütze", "beanie", "hut", "gürtel", "belt",
+    "schal", "handschuhe", "socken", "socks", "unterwäsche",
+    # Sonstiges
+    "uhr", "watch", "schmuck", "kette", "ring", "armband",
+    "brille", "sunglasses", "parfum", "cologne",
+    # Kinder
+    "kinder", "baby", "bambino", "bambina", "enfant", "kind",
+    "junior", "kids", "maat 1", "maat 2", "taille 1", "taille 2",
+]
+
+# Schuhgrößen (numerisch, EU) → fast immer Schuhe
+SCHUH_GROESSEN = {str(i) for i in range(16, 50)}
+
+
+def ist_kleidung(item: dict) -> bool:
+    """Gibt True zurück wenn der Artikel Kleidung ist – alles andere wird geblockt."""
+    titel     = item.get("title", "").lower()
+    groesse   = item.get("size_title", "").strip()
+    kat_id    = str(item.get("catalog_id", ""))
+
+    # 0. Land prüfen
+    land = item.get("user", {}).get("country_iso", "")
+    if land and land.upper() not in ERLAUBTE_LAENDER:
+        return False
+
+    # 1. Verbotene Keywords im Titel → sofort blocken
+    if any(kw in titel for kw in VERBOTEN_KEYWORDS):
+        return False
+
+    # 2. Numerische Größe (z.B. 19, 24, 42, 44) → wahrscheinlich Schuh → blocken
+    if groesse in SCHUH_GROESSEN:
+        return False
+
+    # 3. Erlaubte Vinted-Kategorie → durchlassen
+    if kat_id in ERLAUBTE_KATEGORIEN:
         return True
-    return any(keyword in titel for keyword in SCHUH_KEYWORDS)
+
+    # 4. Kleidungs-Keyword im Titel → durchlassen
+    if any(kw in titel for kw in KLEIDUNGS_KEYWORDS):
+        return True
+
+    # 5. Größen die typisch für Kleidung sind → durchlassen
+    kleidungs_groessen = {"xs", "s", "m", "l", "xl", "xxl", "xxxl",
+                          "xs/s", "s/m", "m/l", "l/xl", "one size"}
+    if groesse.lower() in kleidungs_groessen:
+        return True
+
+    # 6. Im Zweifel: blocken
+    return False
 
 
 # ─── Hilfsfunktionen ──────────────────────────────────────────────
 
+# Erlaubte Länder-Codes
+ERLAUBTE_LAENDER = {"DE", "AT", "CH", "IT", "FR", "ES"}
+
 def build_url(brand_id: int, price_max: int | None) -> str:
+    # Vinted Länder-IDs: DE=7, AT=193, CH=195, IT=10, FR=6, ES=13
+    laender_ids = ["7", "193", "195", "10", "6", "13"]
     params = [
         f"brand_ids[]={brand_id}",
         "order=newest_first",
         "per_page=30",
-    ]
+    ] + [f"country_ids[]={lid}" for lid in laender_ids]
     if price_max is not None:
         params.append(f"price_to={price_max}")
     return "https://www.vinted.de/api/v2/catalog/items?" + "&".join(params)
@@ -206,7 +291,7 @@ async def check_all_categories():
             iid = item.get("id")
             if iid and iid not in seen_ids[cat["name"]]:
                 seen_ids[cat["name"]].add(iid)
-                if not first_run and not ist_schuh(item):
+                if not first_run and ist_kleidung(item):
                     new_items.append(item)
 
         if new_items:
