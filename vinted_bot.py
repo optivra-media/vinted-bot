@@ -24,7 +24,7 @@ LAENDER = ["7", "193", "195", "10", "6", "13"]
 
 NIKE    = 53
 ADIDAS  = 14
-LACOSTE = 98
+LACOSTE = 304  # Korrekte Lacoste Brand ID
 RL      = 88
 TRIKOT_BRANDS = [53, 14, 98, 88, 316, 103, 254]
 
