@@ -123,9 +123,31 @@ def _fetch(brand_ids, pmax):
     for l in LAENDER:   params.append(("country_ids[]", l))
     if pmax: params.append(("price_to", str(pmax)))
     url = "https://www.vinted.de/api/v2/catalog/items"
+
     s = requests.Session()
-    s.get("https://www.vinted.de", headers=HEADERS, proxies=PROXIES, timeout=10)
-    r = s.get(url, headers=HEADERS, params=params, proxies=PROXIES, timeout=15)
+    # Erst Startseite aufrufen um echte Cookies zu bekommen
+    s.get("https://www.vinted.de", headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+    }, proxies=PROXIES, timeout=10)
+
+    # Dann API aufrufen mit den Cookies
+    r = s.get(url, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer": "https://www.vinted.de/",
+        "Origin": "https://www.vinted.de",
+        "Connection": "keep-alive",
+        "X-Requested-With": "XMLHttpRequest",
+    }, params=params, proxies=PROXIES, timeout=15)
     r.raise_for_status()
     return r.json().get("items", [])
 
