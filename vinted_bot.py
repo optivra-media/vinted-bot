@@ -1,6 +1,6 @@
 import discord
 from discord.ext import tasks
-import aiohttp
+import requests
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DISCORD_TOKEN  = os.getenv("DISCORD_TOKEN")
-PROXY_URL      = os.getenv("PROXY_URL")  # http://user:pass@p.webshare.io:3128
+PROXY_URL      = os.getenv("PROXY_URL")
 CHECK_INTERVAL = 40
 
 HEADERS = {
@@ -18,6 +18,7 @@ HEADERS = {
     "Accept-Language": "de-DE,de;q=0.9",
 }
 
+PROXIES = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
 LAENDER = ["7", "193", "195", "10", "6", "13"]
 
 NIKE    = 53
@@ -40,7 +41,7 @@ KW_SHIRTS = ["t-shirt","tshirt","shirt","longsleeve","long sleeve","tee",
     "maglietta","maglia","t shirt","kurzarm","oberteil","chemise","camiseta","camisa","sportshirt"]
 KW_HOODIES = ["hoodie","hoody","sweatshirt","sweater","pullover","pulli",
     "kapuzenpullover","crewneck","crew neck","felpa","sweat","sudadera","trui","kapuze"]
-KW_POLOS = ["polo","poloshirt","polo shirt","polo t-shirt","polo hemd","polo top"]
+KW_POLOS   = ["polo","poloshirt","polo shirt","polo t-shirt","polo hemd","polo top"]
 KW_TRIKOTS     = ["trikot","jersey","maglia","maillot","football shirt","soccer shirt",
     "fussballtrikot","fußballtrikot","sporttrikot","kit","spielertrikot"]
 KW_TRIKOT_HOSE = ["trikot hose","football shorts","soccer shorts","fußballshorts",
@@ -56,7 +57,6 @@ VERBOTEN = [
     "kinder","kinderjacke","kinderhose","baby","babykleidung","kleinkind","junge","mädchen",
     "kids","children","toddler","bambino","bambina","bambini","neonato","enfant","bébé",
     "bebe","niño","niña","infantil","bimbo","bimba","junior","mini ","petit","petite",
-    "lacoste kids","lacoste baby","lacoste mini",
     "tasche","bag","rucksack","backpack","cap","mütze","beanie","gürtel","belt",
     "schal","socken","socks","handschuhe","uhr","watch","schmuck","kette","ring",
     "brille","parfum","ball","fußball","basketball",
@@ -116,34 +116,22 @@ CATEGORIES = [
 seen_ids: dict[str, set[int]] = {cat["name"]: set() for cat in CATEGORIES}
 first_run = True
 
-# ─── Async HTTP ───────────────────────────────────────────────────
-async def get_cookies(session: aiohttp.ClientSession) -> dict:
-    try:
-        async with session.get("https://www.vinted.de", headers=HEADERS,
-                               proxy=PROXY_URL, timeout=aiohttp.ClientTimeout(total=10)) as r:
-            return {c.key: c.value for c in session.cookie_jar}
-    except:
-        return {}
-
-async def fetch_items(session: aiohttp.ClientSession, brand_ids: list, pmax) -> list:
-    params = [("order", "newest_first"), ("per_page", "30")]
-    for b in brand_ids:
-        params.append(("brand_ids[]", str(b)))
-    for l in LAENDER:
-        params.append(("country_ids[]", l))
-    if pmax:
-        params.append(("price_to", str(pmax)))
+# ─── HTTP (läuft in eigenem Thread) ──────────────────────────────
+def _fetch(brand_ids, pmax):
+    params = [("order","newest_first"),("per_page","30")]
+    for b in brand_ids: params.append(("brand_ids[]", str(b)))
+    for l in LAENDER:   params.append(("country_ids[]", l))
+    if pmax: params.append(("price_to", str(pmax)))
     url = "https://www.vinted.de/api/v2/catalog/items"
+    s = requests.Session()
+    s.get("https://www.vinted.de", headers=HEADERS, proxies=PROXIES, timeout=10)
+    r = s.get(url, headers=HEADERS, params=params, proxies=PROXIES, timeout=15)
+    r.raise_for_status()
+    return r.json().get("items", [])
+
+async def fetch_items(brand_ids, pmax):
     try:
-        await get_cookies(session)
-        async with session.get(url, headers=HEADERS, params=params,
-                               proxy=PROXY_URL, timeout=aiohttp.ClientTimeout(total=15)) as r:
-            if r.status == 200:
-                data = await r.json()
-                return data.get("items", [])
-            else:
-                print(f"[Fehler] Status {r.status}")
-                return []
+        return await asyncio.to_thread(_fetch, brand_ids, pmax)
     except Exception as e:
         print(f"[Fehler] {e}")
         return []
@@ -160,12 +148,12 @@ def preis_ok(item, pmin, pmax):
 
 def keyword_ok(item, kw):
     if not kw: return True
-    return any(k in item.get("title", "").lower() for k in kw)
+    return any(k in item.get("title","").lower() for k in kw)
 
 def kleidung_ok(item):
-    titel   = item.get("title", "").lower()
-    groesse = item.get("size_title", "").strip()
-    land    = item.get("user", {}).get("country_iso", "").upper()
+    titel   = item.get("title","").lower()
+    groesse = item.get("size_title","").strip()
+    land    = item.get("user",{}).get("country_iso","").upper()
     if any(v in titel for v in VERBOTEN): return False
     if groesse in VERBOTEN_GROESSEN: return False
     if land and land not in {"DE","AT","CH","IT","FR","ES"}: return False
@@ -173,11 +161,11 @@ def kleidung_ok(item):
 
 # ─── Embed ────────────────────────────────────────────────────────
 def build_embed(item, cat):
-    title = item.get("title", "Unbekannt")
-    price = item.get("price", {})
+    title = item.get("title","Unbekannt")
+    price = item.get("price",{})
     pstr  = f"{price.get('amount','?')} {price.get('currency_code','EUR')}"
     url   = f"https://www.vinted.de/items/{item.get('id')}"
-    imgs  = item.get("photos", [])
+    imgs  = item.get("photos",[])
     img   = imgs[0].get("url") if imgs else None
     e = discord.Embed(title=f"🛍️ {title}", url=url, color=cat["color"],
                       description=f"**{cat['name']}**")
@@ -197,25 +185,21 @@ client  = discord.Client(intents=intents)
 @tasks.loop(seconds=CHECK_INTERVAL)
 async def check_all():
     global first_run
-    connector = aiohttp.TCPConnector(ssl=False)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        for cat in CATEGORIES:
-            if cat["ch"] == 0: continue
-            channel = client.get_channel(cat["ch"])
-            if not channel: continue
-
-            items = await fetch_items(session, cat["brands"], cat["pmax"])
-            for item in items:
-                iid = item.get("id")
-                if not iid or iid in seen_ids[cat["name"]]: continue
-                seen_ids[cat["name"]].add(iid)
-                if first_run: continue
-                if not kleidung_ok(item): continue
-                if not preis_ok(item, cat["pmin"], cat["pmax"]): continue
-                if not keyword_ok(item, cat["kw"]): continue
-                await channel.send(embed=build_embed(item, cat))
-                print(f"✅ [{cat['name']}] {item.get('title')}")
-
+    for cat in CATEGORIES:
+        if cat["ch"] == 0: continue
+        channel = client.get_channel(cat["ch"])
+        if not channel: continue
+        items = await fetch_items(cat["brands"], cat["pmax"])
+        for item in items:
+            iid = item.get("id")
+            if not iid or iid in seen_ids[cat["name"]]: continue
+            seen_ids[cat["name"]].add(iid)
+            if first_run: continue
+            if not kleidung_ok(item): continue
+            if not preis_ok(item, cat["pmin"], cat["pmax"]): continue
+            if not keyword_ok(item, cat["kw"]): continue
+            await channel.send(embed=build_embed(item, cat))
+            print(f"✅ [{cat['name']}] {item.get('title')}")
     first_run = False
 
 @client.event
