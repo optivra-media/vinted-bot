@@ -245,8 +245,12 @@ async def check_all():
     ]
 
     for brand_ids, pmax in brand_requests:
-        await asyncio.sleep(REQUEST_DELAY)
-        items = await fetch_items(brand_ids, pmax)
+        try:
+            await asyncio.sleep(REQUEST_DELAY)
+            items = await fetch_items(brand_ids, pmax)
+        except Exception as e:
+            print(f"[Fehler] Anfrage fehlgeschlagen: {e}")
+            continue
 
         for item in items:
             iid = item.get("id")
@@ -273,8 +277,11 @@ async def check_all():
                     continue
                 if not keyword_ok(item, cat["kw"]):
                     continue
-                await channel.send(embed=build_embed(item, cat))
-                print(f"✅ [{cat['name']}] {item.get('title')}")
+                try:
+                    await channel.send(embed=build_embed(item, cat))
+                    print(f"✅ [{cat['name']}] {item.get('title')}")
+                except Exception as e:
+                    print(f"[Fehler] Senden fehlgeschlagen [{cat['name']}]: {e}")
 
     first_run = False
 
