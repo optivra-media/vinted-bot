@@ -9,8 +9,15 @@ load_dotenv()
 
 DISCORD_TOKEN  = os.getenv("DISCORD_TOKEN")
 PROXY_URL      = os.getenv("PROXY_URL")
-CHECK_INTERVAL = 30   # 30 Sekunden
-REQUEST_DELAY  = 3    # 3 Sekunden zwischen den 4 Marken-Anfragen
+CHECK_INTERVAL = 60   # Basis-Interval (wird dynamisch angepasst)
+REQUEST_DELAY  = 8    # 8 Sekunden zwischen Anfragen
+
+def get_interval() -> int:
+    from datetime import datetime
+    h = datetime.now().hour
+    if 2 <= h < 13:
+        return 1200  # 20 Minuten nachts
+    return 60        # 1 Minute tagsüber
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -19,7 +26,7 @@ HEADERS = {
     "Accept-Language": "de-DE,de;q=0.9",
 }
 
-PROXIES = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
+PROXIES = None  # Kein Proxy – Render.com IPs werden nicht geblockt
 LAENDER = ["7", "193", "195", "10", "6", "13"]
 
 NIKE    = 53
@@ -50,21 +57,56 @@ KW_TRIKOT_HOSE = ["trikot hose","football shorts","soccer shorts","fußballshort
 KW_TRIKOT_SET  = ["trikot set","jersey set","football kit","soccer kit","trikot komplett"]
 
 VERBOTEN = [
-    "schuh","schuhe","sneaker","sneakers","boots","stiefel","slipper","sandale","sandalen",
-    "scarpe","scarpa","schoen","schoenen","chaussure","chaussures","zapato","zapatos",
-    "zapatilla","zapatillas","air max","air force","dunk","yeezy","campus","gazelle",
-    "samba","superstar","stan smith","ultraboost","nmd","converse","vans","timberland",
-    "ugg","crocs","birkenstock","loafer","pumps","ballerina",
-    "kinder","kinderjacke","kinderhose","baby","babykleidung","kleinkind","junge","mädchen",
-    "kids","children","toddler","bambino","bambina","bambini","neonato","enfant","bébé",
-    "bebe","niño","niña","infantil","bimbo","bimba","junior","mini ","petit","petite",
-    "tasche","bag","rucksack","backpack","cap","mütze","beanie","gürtel","belt",
-    "schal","socken","socks","handschuhe","uhr","watch","schmuck","kette","ring",
-    "brille","parfum","ball","fußball","basketball",
+    # Schuhe Deutsch
+    "schuh","schuhe","stiefel","turnschuh","laufschuh","slipper",
+    "sandale","sandalen","hausschuh","clogs","absatz",
+    # Schuhe Englisch
+    "sneaker","sneakers","boots","loafer","pumps","ballerina",
+    "shoe","shoes","footwear","trainers",
+    # Schuhe Italienisch/Spanisch/Französisch/Niederländisch
+    "scarpe","scarpa","stivaletti","stivali","sandali",
+    "zapato","zapatos","zapatilla","zapatillas","bota","botas",
+    "chaussure","chaussures","basket","baskets","schoen","schoenen",
+    # Schuh-Modelle
+    "air max","air force","dunk","yeezy","campus","gazelle",
+    "samba","superstar","stan smith","ultraboost","nmd",
+    "converse","vans","timberland","ugg","crocs","birkenstock",
+    # Kinder Deutsch
+    "kinder","kinderjacke","kinderhose","kindershirt","kindermode",
+    "baby","babykleidung","babyjacke","babyhose","babybody",
+    "kleinkind","neugeboren","newborn","junge ","mädchen ",
+    # Kinder Englisch
+    "kids","children","child","toddler","infant","newborn",
+    "boys ","girls ","baby boy","baby girl",
+    # Kinder Italienisch
+    "bambino","bambina","bambini","neonato","neonata",
+    "bimbo","bimba","ragazzo","ragazza",
+    # Kinder Niederländisch/Französisch/Spanisch
+    "kinderen","meisje","jongen","enfant","bébé","bebe",
+    "garçon","fille","niño","niña","infantil",
+    # Kindergrößen im Titel
+    "gr. 86","gr. 92","gr. 98","gr. 104","gr. 110","gr. 116",
+    "gr. 122","gr. 128","gr. 134","gr. 140","gr. 146","gr. 152",
+    "size 86","size 92","size 98","taille 86","taille 92",
+    "maat 86","maat 92","maat 98","mois","months old",
+    # Accessoires & Sonstiges
+    "tasche","bag","rucksack","backpack","handtasche",
+    "cap","mütze","beanie","hut","snapback",
+    "gürtel","belt","schal","socken","socks","strümpfe",
+    "handschuhe","gloves","unterwäsche","underwear",
+    "uhr","watch","schmuck","kette","ring","armband","ohrringe",
+    "brille","sunglasses","parfum","cologne",
+    "ball","fußball","basketball","handball",
 ]
 
-VERBOTEN_GROESSEN = {str(i) for i in range(16, 36)} | {
-    "86","92","98","104","110","116","122","128","134","140","146","152","158","164","170"}
+VERBOTEN_GROESSEN = (
+    {str(i) for i in range(16, 36)} |
+    {"86","92","98","104","110","116","122","128",
+     "134","140","146","152","158","164","170",
+     "0-3m","3-6m","6-9m","6-12m","9-12m","12-18m",
+     "18-24m","1-2y","2-3y","3-4y","4-5y","5-6y",
+     "6-7y","7-8y","8-9y","9-10y","10-11y","11-12y",}
+)
 
 def ch(key): return int(os.getenv(key, 0))
 
@@ -154,7 +196,7 @@ def _fetch(brand_ids, pmax):
     global cookie_session
     if cookie_session is None:
         refresh_session()
-    params = [("order","newest_first"),("per_page","30")]
+    params = [("order","newest_first"),("per_page","2")]  # Nur 2 Artikel → minimale Bandwidth
     for b in brand_ids: params.append(("brand_ids[]", str(b)))
     for l in LAENDER:   params.append(("country_ids[]", l))
     if pmax: params.append(("price_to", str(pmax)))
@@ -226,9 +268,15 @@ def build_embed(item, cat):
 intents = discord.Intents.default()
 client  = discord.Client(intents=intents)
 
-@tasks.loop(seconds=CHECK_INTERVAL)
+@tasks.loop(seconds=60)
 async def check_all():
     global first_run, cookie_counter
+
+    # Dynamisches Interval – nachts schlafen
+    interval = get_interval()
+    if interval != check_all.seconds:
+        check_all.change_interval(seconds=interval)
+        print(f"[Info] Interval geändert auf {interval}s")
 
     cookie_counter += 1
     if cookie_counter >= COOKIE_REFRESH:
