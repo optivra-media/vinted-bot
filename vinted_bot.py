@@ -236,6 +236,7 @@ async def fetch_items(brand_ids, per_page=10):
         return await asyncio.to_thread(_fetch, brand_ids, per_page)
     except Exception as e:
         print(f"[Fehler] {e}")
+        await asyncio.sleep(30)  # 30s warten bei Fehler
         return []
 
 # ─── Filter ───────────────────────────────────────────────────────
@@ -342,8 +343,12 @@ async def check_all():
         await asyncio.to_thread(refresh_session)
 
     for brand_ids in BRAND_REQUESTS:
-        await asyncio.sleep(REQUEST_DELAY)
-        items = await fetch_items(brand_ids, per_page=10)
+        try:
+            await asyncio.sleep(REQUEST_DELAY)
+            items = await fetch_items(brand_ids, per_page=10)
+        except Exception as e:
+            print(f"[Fehler] Anfrage übersprungen: {e}")
+            continue
 
         for item in items:
             iid = item.get("id")
