@@ -337,7 +337,7 @@ async def check_all():
     for brand_ids in BRAND_REQUESTS:
         try:
             await asyncio.sleep(REQUEST_DELAY)
-            items = await fetch_items(brand_ids, per_page=10)
+            items = await fetch_items(brand_ids, per_page=30)
         except Exception as e:
             print(f"[Fehler] Anfrage übersprungen: {e}")
             continue
