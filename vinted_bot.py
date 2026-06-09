@@ -1,6 +1,6 @@
 """
-Vinted Snipebot – Komplett
-===========================
+Vinted Snipebot – Neue Channel Struktur
+========================================
 Tagsüber (13:00–02:00): 1 Minute Interval
 Nachts (02:00–13:00): 20 Minuten Interval
 """
@@ -30,56 +30,74 @@ def get_interval() -> int:
 
 LAENDER = ["7", "193", "195", "10", "6", "13"]
 
-NIKE          = 53
-ADIDAS        = 14
-LACOSTE       = 304
-RL            = 88
-TRIKOT_BRANDS = [53, 14, 304, 88, 316, 103, 254]
+# ─── Brand IDs ────────────────────────────────────────────────────
+NIKE         = 53
+ADIDAS       = 14
+LACOSTE      = 304
+RL           = 88
+FRED_PERRY   = 2929
+LYLE_SCOTT   = 2026
+LONSDALE     = 304  # Lonsdale ID
+CP_COMPANY   = 2165
+LA_MARTINA   = 1234
+DOLCE        = 369
+ARMANI       = 213
+DIESEL       = 99
+CALVIN_KLEIN = 36
+TOMMY        = 94
+STONE_ISLAND = 2522
+BURBERRY     = 228
+MONCLER      = 1514
+LEVIS        = 97
+MISS_ME      = 1337
+TRUE_REL     = 1338
+GSTAR        = 224
 
-KW_TRACKPANTS = ["trackpant","track pant","jogginghose","trainingshose","sporthose",
-    "jogger","sweatpant","joggingbroek","pantalon","pantalone","track hose",
-    "trackhose","hose","broek","jogging","training pant"]
-KW_TRACKSUITS = ["tracksuit","trainingsanzug","jogginganzug","sportanzug","tuta",
-    "survêtement","survetement","chandal","trainingspak","track suit",
-    "jogging set","sport set","2 teilig","2-teilig","full set","ensemble"]
-KW_JACKEN     = ["jacke","jacket","windbreaker","anorak","parka","übergangsjacke",
-    "regenjacke","trainingsjacke","zip","giubbotto","veste","blouson",
-    "cazadora","chaqueta","coach jacket","track jacket","trackjacket",
-    "fleece","softshell","half zip","quarter zip","full zip","winterjacke"]
-KW_SHIRTS     = ["t-shirt","tshirt","shirt","longsleeve","long sleeve","tee",
-    "maglietta","maglia","t shirt","kurzarm","oberteil","chemise","camiseta"]
-KW_HOODIES    = ["hoodie","hoody","sweatshirt","sweater","pullover","pulli",
-    "kapuzenpullover","crewneck","crew neck","felpa","sweat","sudadera","kapuze"]
-KW_POLOS      = ["polo","poloshirt","polo shirt","polo t-shirt","polo hemd","polo top"]
-KW_TRIKOTS     = ["trikot","jersey","maglia","maillot","football shirt","soccer shirt",
+# Beste Resell-Marken für Preis/Mix Channels
+TOP_BRANDS = [NIKE, ADIDAS, LACOSTE, RL, FRED_PERRY, STONE_ISLAND, CP_COMPANY, TOMMY, BURBERRY, MONCLER]
+
+# Alle Marken
+ALL_BRANDS = [NIKE, ADIDAS, LACOSTE, RL, FRED_PERRY, LYLE_SCOTT, LONSDALE,
+              CP_COMPANY, LA_MARTINA, DOLCE, ARMANI, DIESEL, CALVIN_KLEIN,
+              TOMMY, STONE_ISLAND, BURBERRY, MONCLER, LEVIS, MISS_ME, TRUE_REL, GSTAR]
+
+# ─── Keywords ─────────────────────────────────────────────────────
+KW_POLOS    = ["polo","poloshirt","polo shirt","polo t-shirt","polo hemd","polo top"]
+KW_JACKEN   = ["jacke","jacket","windbreaker","anorak","parka","übergangsjacke",
+    "regenjacke","trainingsjacke","giubbotto","veste","blouson","cazadora",
+    "chaqueta","coach jacket","track jacket","fleece","softshell",
+    "half zip","quarter zip","full zip","winterjacke"]
+KW_TRIKOTS  = ["trikot","jersey","maglia","maillot","football shirt","soccer shirt",
     "fussballtrikot","fußballtrikot","sporttrikot","kit","spielertrikot"]
-KW_TRIKOT_HOSE = ["trikot hose","football shorts","soccer shorts","fußballshorts",
-    "sport shorts","kurze hose","shorts"]
-KW_TRIKOT_SET  = ["trikot set","jersey set","football kit","soccer kit","trikot komplett"]
+KW_GUERTEL  = ["gürtel","belt","cintura","ceinture","cinturón","ledergürtel","stoffgürtel"]
+KW_TASCHEN  = ["tasche","bag","handtasche","umhängetasche","rucksack","backpack",
+    "borsa","zaino","sac","bolso","mochila","tote","shopper"]
+KW_CAPS     = ["cap","snapback","baseball cap","trucker cap","fitted cap","dad cap",
+    "cappello","casquette","gorra","mütze","beanie","bucket hat"]
 
-VERBOTEN = [
+# ─── Filter ───────────────────────────────────────────────────────
+VERBOTEN_KLEIDUNG = [
     # Schuhe
     "schuh","schuhe","stiefel","turnschuh","laufschuh","slipper","sandale","sandalen",
     "sneaker","sneakers","boots","loafer","pumps","ballerina","shoe","shoes","footwear",
-    "scarpe","scarpa","stivaletti","zapato","zapatos","zapatilla","zapatillas",
-    "chaussure","chaussures","basket","baskets","schoen","schoenen",
+    "scarpe","scarpa","zapato","zapatos","zapatilla","zapatillas",
+    "chaussure","chaussures","schoen","schoenen",
     "air max","air force","dunk","yeezy","campus","gazelle","samba",
-    "superstar","stan smith","ultraboost","nmd","converse","vans","timberland",
-    "ugg","crocs","birkenstock",
+    "superstar","stan smith","ultraboost","nmd","converse","vans","timberland","ugg","crocs",
     # Kinder
-    "kinder","kinderjacke","kinderhose","kindershirt","kindermode",
-    "baby","babykleidung","babyjacke","babyhose","babybody","kleinkind",
+    "kinder","kinderjacke","kinderhose","kindershirt","baby","babykleidung","kleinkind",
     "kids","children","child","toddler","infant","newborn",
-    "bambino","bambina","bambini","neonato","neonata","bimbo","bimba",
+    "bambino","bambina","bambini","neonato","bimbo","bimba",
     "enfant","bébé","bebe","garçon","fille","niño","niña","infantil",
-    "gr. 86","gr. 92","gr. 98","gr. 104","gr. 110","gr. 116","gr. 122",
-    "maat 86","maat 92","maat 98","taille 86","taille 92","months old",
+    "gr. 86","gr. 92","gr. 98","gr. 104","maat 86","maat 92","months old",
     "years old"," years,","ans,","anni,",
-    # Accessoires
-    "tasche","bag","rucksack","backpack","cap","mütze","beanie",
-    "gürtel","belt","schal","socken","socks","handschuhe",
-    "uhr","watch","schmuck","kette","ring","brille","parfum",
-    "ball","fußball","basketball","handball",
+]
+
+VERBOTEN_ACCESSOIRES = [
+    # Kein Filter für Accessoire-Channels – nur Schuhe und Kinder raus
+    "schuh","schuhe","sneaker","sneakers","boots","shoe","shoes",
+    "scarpe","scarpa","zapato","zapatos","chaussure","schoen",
+    "kinder","baby","kids","children","bambino","bambina","enfant","niño","niña",
 ]
 
 VERBOTEN_GROESSEN = (
@@ -92,64 +110,46 @@ VERBOTEN_GROESSEN = (
      "12-13 years","13-14 years","53 cm","56 cm","62 cm","68 cm","74 cm","80 cm"}
 )
 
+# ─── Channel IDs ──────────────────────────────────────────────────
 def ch(key): return int(os.getenv(key, 0))
 
 CATEGORIES = [
-    # NIKE – Keyword (Priorität 1)
-    {"name":"Nike – Trackpants",   "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":KW_TRACKPANTS, "ch":ch("CHANNEL_NIKE_TRACKPANTS"),  "color":0xF5821F},
-    {"name":"Nike – Tracksuits",   "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":KW_TRACKSUITS, "ch":ch("CHANNEL_NIKE_TRACKSUITS"),  "color":0xF5821F},
-    {"name":"Nike – Jacken",       "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":KW_JACKEN,     "ch":ch("CHANNEL_NIKE_JACKEN"),      "color":0xF5821F},
-    {"name":"Nike – Shirts",       "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":KW_SHIRTS,     "ch":ch("CHANNEL_NIKE_SHIRTS"),      "color":0xF5821F},
-    {"name":"Nike – Hoodies",      "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":KW_HOODIES,    "ch":ch("CHANNEL_NIKE_HOODIES"),     "color":0xF5821F},
-    {"name":"Nike – Polos",        "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":KW_POLOS,      "ch":ch("CHANNEL_NIKE_POLOS"),       "color":0xF5821F},
-    # NIKE – Preis (Priorität 2)
-    {"name":"Nike – 0-10€",        "brands":[NIKE],  "pmin":0.01,  "pmax":10,   "kw":None,          "ch":ch("CHANNEL_NIKE_10"),          "color":0xF5821F},
-    {"name":"Nike – 10-20€",       "brands":[NIKE],  "pmin":10.01, "pmax":20,   "kw":None,          "ch":ch("CHANNEL_NIKE_20"),          "color":0xF5821F},
-    # NIKE – Alles (Priorität 3)
-    {"name":"Nike – Alles",        "brands":[NIKE],  "pmin":None,  "pmax":None, "kw":None,          "ch":ch("CHANNEL_NIKE"),             "color":0xF5821F},
+    # ── PREIS CHANNELS (alle Top-Marken) ──────────────────────────
+    {"name":"Under 5€",    "brands":TOP_BRANDS, "pmin":0.01, "pmax":5,  "kw":None, "ch":ch("CHANNEL_UNDER_5"),  "color":0xFFD700, "typ":"kleidung"},
+    {"name":"Under 10€",   "brands":TOP_BRANDS, "pmin":0.01, "pmax":10, "kw":None, "ch":ch("CHANNEL_UNDER_10"), "color":0xFFD700, "typ":"kleidung"},
 
-    # ADIDAS – Keyword
-    {"name":"Adidas – Trackpants", "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":KW_TRACKPANTS, "ch":ch("CHANNEL_ADIDAS_TRACKPANTS"),"color":0x000000},
-    {"name":"Adidas – Tracksuits", "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":KW_TRACKSUITS, "ch":ch("CHANNEL_ADIDAS_TRACKSUITS"),"color":0x000000},
-    {"name":"Adidas – Jacken",     "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":KW_JACKEN,     "ch":ch("CHANNEL_ADIDAS_JACKEN"),    "color":0x000000},
-    {"name":"Adidas – Shirts",     "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":KW_SHIRTS,     "ch":ch("CHANNEL_ADIDAS_SHIRTS"),    "color":0x000000},
-    {"name":"Adidas – Hoodies",    "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":KW_HOODIES,    "ch":ch("CHANNEL_ADIDAS_HOODIES"),   "color":0x000000},
-    {"name":"Adidas – Polos",      "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":KW_POLOS,      "ch":ch("CHANNEL_ADIDAS_POLOS"),     "color":0x000000},
-    # ADIDAS – Preis
-    {"name":"Adidas – 0-15€",      "brands":[ADIDAS],"pmin":0.01,  "pmax":15,   "kw":None,          "ch":ch("CHANNEL_ADIDAS_15"),        "color":0x000000},
-    {"name":"Adidas – 15-40€",     "brands":[ADIDAS],"pmin":15.01, "pmax":40,   "kw":None,          "ch":ch("CHANNEL_ADIDAS_40"),        "color":0x000000},
-    # ADIDAS – Alles
-    {"name":"Adidas – Alles",      "brands":[ADIDAS],"pmin":None,  "pmax":None, "kw":None,          "ch":ch("CHANNEL_ADIDAS"),           "color":0x000000},
+    # ── MARKEN CHANNELS ───────────────────────────────────────────
+    {"name":"Nike",         "brands":[NIKE],         "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_NIKE"),         "color":0xF5821F, "typ":"kleidung"},
+    {"name":"Adidas",       "brands":[ADIDAS],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_ADIDAS"),       "color":0x000000, "typ":"kleidung"},
+    {"name":"Lacoste",      "brands":[LACOSTE],      "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LACOSTE"),      "color":0x00A850, "typ":"kleidung"},
+    {"name":"Ralph Lauren", "brands":[RL],           "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_RL"),           "color":0x002868, "typ":"kleidung"},
+    {"name":"Fred Perry",   "brands":[FRED_PERRY],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_FRED_PERRY"),   "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Lyle Scott",   "brands":[LYLE_SCOTT],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LYLE_SCOTT"),   "color":0x1a1a2e, "typ":"kleidung"},
+    {"name":"Lonsdale",     "brands":[LONSDALE],     "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LONSDALE"),     "color":0xCC0000, "typ":"kleidung"},
+    {"name":"CP Company",   "brands":[CP_COMPANY],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_CP_COMPANY"),   "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"La Martina",   "brands":[LA_MARTINA],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LA_MARTINA"),   "color":0x003580, "typ":"kleidung"},
+    {"name":"Dolce Gabbana","brands":[DOLCE],        "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_DOLCE_GABBANA"),"color":0xFFD700, "typ":"kleidung"},
+    {"name":"Armani",       "brands":[ARMANI],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_ARMANI"),       "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"Diesel",       "brands":[DIESEL],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_DIESEL"),       "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Calvin Klein", "brands":[CALVIN_KLEIN], "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_CALVIN_KLEIN"), "color":0x000000, "typ":"kleidung"},
+    {"name":"Tommy Hilfiger","brands":[TOMMY],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_TOMMY"),        "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Stone Island", "brands":[STONE_ISLAND], "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_STONE_ISLAND"), "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"Burberry",     "brands":[BURBERRY],     "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_BURBERRY"),     "color":0xC4A45A, "typ":"kleidung"},
+    {"name":"Moncler",      "brands":[MONCLER],      "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_MONCLER"),      "color":0x003580, "typ":"kleidung"},
+    {"name":"Levis",        "brands":[LEVIS],        "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LEVIS"),        "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Miss Me",      "brands":[MISS_ME],      "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_MISS_ME"),      "color":0x9b59b6, "typ":"kleidung"},
+    {"name":"True Religion","brands":[TRUE_REL],     "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_TRUE_RELIGION"),"color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"G-Star",       "brands":[GSTAR],        "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_GSTAR"),        "color":0x000000, "typ":"kleidung"},
 
-    # LACOSTE – Keyword
-    {"name":"Lacoste – Trackpants","brands":[LACOSTE],"pmin":None, "pmax":None, "kw":KW_TRACKPANTS, "ch":ch("CHANNEL_LACOSTE_TRACKPANTS"),"color":0x00A850},
-    {"name":"Lacoste – Tracksuits","brands":[LACOSTE],"pmin":None, "pmax":None, "kw":KW_TRACKSUITS, "ch":ch("CHANNEL_LACOSTE_TRACKSUITS"),"color":0x00A850},
-    {"name":"Lacoste – Jacken",    "brands":[LACOSTE],"pmin":None, "pmax":None, "kw":KW_JACKEN,     "ch":ch("CHANNEL_LACOSTE_JACKEN"),   "color":0x00A850},
-    {"name":"Lacoste – Shirts",    "brands":[LACOSTE],"pmin":None, "pmax":None, "kw":KW_SHIRTS,     "ch":ch("CHANNEL_LACOSTE_SHIRTS"),   "color":0x00A850},
-    {"name":"Lacoste – Hoodies",   "brands":[LACOSTE],"pmin":None, "pmax":None, "kw":KW_HOODIES,    "ch":ch("CHANNEL_LACOSTE_HOODIES"),  "color":0x00A850},
-    {"name":"Lacoste – Polos",     "brands":[LACOSTE],"pmin":None, "pmax":None, "kw":KW_POLOS,      "ch":ch("CHANNEL_LACOSTE_POLOS"),    "color":0x00A850},
-    # LACOSTE – Preis
-    {"name":"Lacoste – 0-10€",     "brands":[LACOSTE],"pmin":0.01, "pmax":10,   "kw":None,          "ch":ch("CHANNEL_LACOSTE_10"),       "color":0x00A850},
-    {"name":"Lacoste – 10-20€",    "brands":[LACOSTE],"pmin":10.01,"pmax":20,   "kw":None,          "ch":ch("CHANNEL_LACOSTE_20"),       "color":0x00A850},
-    {"name":"Lacoste – 20-40€",    "brands":[LACOSTE],"pmin":20.01,"pmax":40,   "kw":None,          "ch":ch("CHANNEL_LACOSTE_40"),       "color":0x00A850},
-    # LACOSTE – Alles
-    {"name":"Lacoste – Alles",     "brands":[LACOSTE],"pmin":None, "pmax":None, "kw":None,          "ch":ch("CHANNEL_LACOSTE"),          "color":0x00A850},
+    # ── MIX CHANNELS ──────────────────────────────────────────────
+    {"name":"Trikot Mix",  "brands":[NIKE,ADIDAS],                              "pmin":None,"pmax":None,"kw":KW_TRIKOTS,"ch":ch("CHANNEL_TRIKOT_MIX"), "color":0x09B1BA,"typ":"kleidung"},
+    {"name":"Polo Mix",    "brands":[LACOSTE,RL,FRED_PERRY,LA_MARTINA,TOMMY],  "pmin":None,"pmax":None,"kw":KW_POLOS,  "ch":ch("CHANNEL_POLO_MIX"),   "color":0x00A850,"typ":"kleidung"},
+    {"name":"Jacken Mix",  "brands":[STONE_ISLAND,CP_COMPANY,MONCLER,BURBERRY,TOMMY,RL], "pmin":None,"pmax":None,"kw":KW_JACKEN,"ch":ch("CHANNEL_JACKEN_MIX"),"color":0x1a1a1a,"typ":"kleidung"},
 
-    # RALPH LAUREN – Keyword
-    {"name":"Ralph Lauren – Polos",    "brands":[RL],"pmin":None,  "pmax":None, "kw":KW_POLOS,      "ch":ch("CHANNEL_RL_POLOS"),     "color":0x002868},
-    {"name":"Ralph Lauren – Jacken",   "brands":[RL],"pmin":None,  "pmax":None, "kw":KW_JACKEN,     "ch":ch("CHANNEL_RL_JACKEN"),    "color":0x002868},
-    {"name":"Ralph Lauren – Tracksuit","brands":[RL],"pmin":None,  "pmax":None, "kw":KW_TRACKSUITS, "ch":ch("CHANNEL_RL_TRACKSUIT"), "color":0x002868},
-    # RALPH LAUREN – Preis
-    {"name":"Ralph Lauren – 0-10€",    "brands":[RL],"pmin":0.01,  "pmax":10,   "kw":None,          "ch":ch("CHANNEL_RL_10"),        "color":0x002868},
-    {"name":"Ralph Lauren – 10-20€",   "brands":[RL],"pmin":10.01, "pmax":20,   "kw":None,          "ch":ch("CHANNEL_RL_20"),        "color":0x002868},
-    {"name":"Ralph Lauren – 20-40€",   "brands":[RL],"pmin":20.01, "pmax":40,   "kw":None,          "ch":ch("CHANNEL_RL_40"),        "color":0x002868},
-    # RALPH LAUREN – Alles
-    {"name":"Ralph Lauren – Alles",    "brands":[RL],"pmin":None,  "pmax":None, "kw":None,          "ch":ch("CHANNEL_RL"),           "color":0x002868},
-
-    # TRIKOTS
-    {"name":"Trikots – Hose",  "brands":TRIKOT_BRANDS,"pmin":None,"pmax":None,"kw":KW_TRIKOT_HOSE,"ch":ch("CHANNEL_TRIKOTS_HOSE"),"color":0x09B1BA},
-    {"name":"Trikots – Set",   "brands":TRIKOT_BRANDS,"pmin":None,"pmax":None,"kw":KW_TRIKOT_SET, "ch":ch("CHANNEL_TRIKOTS_SET"), "color":0x09B1BA},
-    {"name":"Trikots – Alles", "brands":TRIKOT_BRANDS,"pmin":None,"pmax":None,"kw":KW_TRIKOTS,    "ch":ch("CHANNEL_TRIKOTS"),     "color":0x09B1BA},
+    # ── ACCESSOIRE CHANNELS ───────────────────────────────────────
+    {"name":"Gürtel",  "brands":ALL_BRANDS,"pmin":None,"pmax":None,"kw":KW_GUERTEL,"ch":ch("CHANNEL_GUERTEL"),"color":0x8B4513,"typ":"accessoire"},
+    {"name":"Taschen", "brands":ALL_BRANDS,"pmin":None,"pmax":None,"kw":KW_TASCHEN,"ch":ch("CHANNEL_TASCHEN"),"color":0x8B4513,"typ":"accessoire"},
+    {"name":"Caps",    "brands":ALL_BRANDS,"pmin":None,"pmax":None,"kw":KW_CAPS,   "ch":ch("CHANNEL_CAPS"),   "color":0x8B4513,"typ":"accessoire"},
 ]
 
 # ─── Seen IDs ─────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ for cat in CATEGORIES:
         seen_ids[cat["name"]] = set()
 
 global_seen: set[int] = {iid for s in seen_ids.values() for iid in s}
-first_run = True
+first_run     = True
 cookie_session = None
 cookie_counter = 0
 COOKIE_REFRESH = 5
@@ -210,7 +210,7 @@ def refresh_session():
     cookie_session = s
     print("[Info] Session erneuert")
 
-def _fetch(brand_ids, per_page=10):
+def _fetch(brand_ids, per_page=20):
     global cookie_session
     if cookie_session is None:
         refresh_session()
@@ -229,7 +229,7 @@ def _fetch(brand_ids, per_page=10):
         refresh_session()
         return []
 
-async def fetch_items(brand_ids, per_page=10):
+async def fetch_items(brand_ids, per_page=20):
     try:
         return await asyncio.to_thread(_fetch, brand_ids, per_page)
     except Exception as e:
@@ -255,39 +255,17 @@ def kleidung_ok(item):
     titel   = item.get("title","").lower()
     groesse = item.get("size_title","").strip().lower()
     land    = item.get("user",{}).get("country_iso","").upper()
-    if any(v in titel for v in VERBOTEN): return False
+    if any(v in titel for v in VERBOTEN_KLEIDUNG): return False
     if groesse in VERBOTEN_GROESSEN: return False
     if land and land not in {"DE","AT","CH","IT","FR","ES"}: return False
     return True
 
-def find_best_channel(item, brand_ids):
-    # Priorität 1: Keyword-Channel
-    for cat in CATEGORIES:
-        if cat["brands"] != brand_ids and not (len(cat["brands"]) > 1 and brand_ids == TRIKOT_BRANDS):
-            continue
-        if cat["kw"] is None: continue
-        if cat["ch"] == 0: continue
-        if not preis_ok(item, cat["pmin"], cat["pmax"]): continue
-        if keyword_ok(item, cat["kw"]):
-            return cat
-    # Priorität 2: Preis-Channel
-    for cat in CATEGORIES:
-        if cat["brands"] != brand_ids and not (len(cat["brands"]) > 1 and brand_ids == TRIKOT_BRANDS):
-            continue
-        if cat["kw"] is not None: continue
-        if cat["pmin"] is None: continue
-        if cat["ch"] == 0: continue
-        if preis_ok(item, cat["pmin"], cat["pmax"]):
-            return cat
-    # Priorität 3: Alles-Channel
-    for cat in CATEGORIES:
-        if cat["brands"] != brand_ids and not (len(cat["brands"]) > 1 and brand_ids == TRIKOT_BRANDS):
-            continue
-        if cat["kw"] is not None: continue
-        if cat["pmin"] is not None: continue
-        if cat["ch"] == 0: continue
-        return cat
-    return None
+def accessoire_ok(item):
+    titel = item.get("title","").lower()
+    land  = item.get("user",{}).get("country_iso","").upper()
+    if any(v in titel for v in VERBOTEN_ACCESSOIRES): return False
+    if land and land not in {"DE","AT","CH","IT","FR","ES"}: return False
+    return True
 
 # ─── Embed ────────────────────────────────────────────────────────
 def build_embed(item, cat):
@@ -312,13 +290,16 @@ def build_embed(item, cat):
 intents = discord.Intents.default()
 client  = discord.Client(intents=intents)
 
-BRAND_REQUESTS = [
-    [NIKE],
-    [ADIDAS],
-    [LACOSTE],
-    [RL],
-    TRIKOT_BRANDS,
-]
+# Unique Brand-Anfragen zusammenstellen
+def get_brand_requests():
+    seen = set()
+    result = []
+    for cat in CATEGORIES:
+        key = tuple(sorted(cat["brands"]))
+        if key not in seen:
+            seen.add(key)
+            result.append(cat["brands"])
+    return result
 
 @tasks.loop(seconds=60)
 async def check_all():
@@ -334,10 +315,10 @@ async def check_all():
         cookie_counter = 0
         await asyncio.to_thread(refresh_session)
 
-    for brand_ids in BRAND_REQUESTS:
+    for brand_ids in get_brand_requests():
         try:
             await asyncio.sleep(REQUEST_DELAY)
-            items = await fetch_items(brand_ids, per_page=30)
+            items = await fetch_items(brand_ids, per_page=20)
         except Exception as e:
             print(f"[Fehler] Anfrage übersprungen: {e}")
             continue
@@ -346,31 +327,47 @@ async def check_all():
             iid = item.get("id")
             if not iid or iid in global_seen:
                 continue
-            if not kleidung_ok(item):
-                global_seen.add(iid)
-                continue
-
-            cat = find_best_channel(item, brand_ids)
-            if not cat:
-                global_seen.add(iid)
-                continue
 
             global_seen.add(iid)
-            seen_ids[cat["name"]].add(iid)
 
-            if first_run:
-                continue
+            # Finde alle passenden Channels für diesen Artikel
+            posted = False
+            for cat in CATEGORIES:
+                if tuple(sorted(cat["brands"])) != tuple(sorted(brand_ids)):
+                    continue
+                if cat["ch"] == 0:
+                    continue
+                if iid in seen_ids[cat["name"]]:
+                    continue
+                if not preis_ok(item, cat["pmin"], cat["pmax"]):
+                    continue
+                if not keyword_ok(item, cat["kw"]):
+                    continue
 
-            channel = client.get_channel(cat["ch"])
-            if not channel:
-                continue
+                # Filter je nach Typ
+                if cat["typ"] == "kleidung" and not kleidung_ok(item):
+                    continue
+                if cat["typ"] == "accessoire" and not accessoire_ok(item):
+                    continue
 
-            try:
-                await channel.send(embed=build_embed(item, cat))
-                print(f"✅ [{cat['name']}] {item.get('title')}")
+                seen_ids[cat["name"]].add(iid)
+
+                if first_run:
+                    continue
+
+                channel = client.get_channel(cat["ch"])
+                if not channel:
+                    continue
+
+                try:
+                    await channel.send(embed=build_embed(item, cat))
+                    print(f"✅ [{cat['name']}] {item.get('title')}")
+                    posted = True
+                except Exception as e:
+                    print(f"[Fehler] [{cat['name']}]: {e}")
+
+            if posted:
                 save_seen()
-            except Exception as e:
-                print(f"[Fehler] [{cat['name']}]: {e}")
 
     first_run = False
 
