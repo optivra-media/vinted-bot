@@ -17,11 +17,14 @@ PROXY_URL      = os.getenv("PROXY_URL")
 PROXIES        = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
 SEEN_FILE      = "seen_ids.json"
 REQUEST_DELAY  = 5
-MONITOR_TTL    = 5 * 60 * 60  # 5 Stunden in Sekunden
-GUILD_ID       = int(os.getenv("GUILD_ID", 0))  # Deine Server ID in Railway eintragen
-MONITOR_CAT_ID = int(os.getenv("MONITOR_CATEGORY_ID", 0))  # Kategorie ID für private Channels
+MONITOR_TTL    = 5 * 60 * 60
+GUILD_ID       = int(os.getenv("GUILD_ID", 0))
+MONITOR_CAT_ID = int(os.getenv("MONITOR_CATEGORY_ID", 0))
 
 LAENDER = ["7", "193", "195", "10", "6", "13"]
+
+# Nur diese Größen erlaubt
+ERLAUBTE_GROESSEN = {"xs", "s", "m", "l", "xl", "xs/s", "s/m", "m/l", "l/xl", "one size"}
 
 # ─── Brand IDs ────────────────────────────────────────────────────
 NIKE         = 53
@@ -59,7 +62,7 @@ BRAND_MAP = {
 }
 
 TOP_BRANDS = [NIKE, ADIDAS, LACOSTE, RL, FRED_PERRY, STONE_ISLAND, CP_COMPANY, TOMMY, BURBERRY, MONCLER]
-ALL_BRANDS = list(BRAND_MAP.values())
+ALL_BRANDS = list(set(BRAND_MAP.values()))
 
 # ─── Keywords ─────────────────────────────────────────────────────
 KW_SPORT  = ["trackpant","track pant","jogginghose","trainingshose","sporthose",
@@ -194,8 +197,6 @@ first_run      = True
 cookie_session = None
 cookie_counter = 0
 COOKIE_REFRESH = 5
-
-# Private Monitor Sessions: {user_id: {channel_id, filter, expires_at, seen}}
 monitor_sessions: dict[int, dict] = {}
 
 # ─── Image Grid ───────────────────────────────────────────────────
@@ -222,7 +223,6 @@ def make_image_grid(img_urls: list) -> io.BytesIO | None:
 
 # ─── API ──────────────────────────────────────────────────────────
 VINTED_TOKEN = os.getenv("VINTED_TOKEN")
-
 API_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -292,12 +292,20 @@ def keyword_ok(item, kw):
     if not kw: return True
     return any(k in item.get("title","").lower() for k in kw)
 
+def groesse_ok(item):
+    """Nur S bis XL erlaubt – für alle Kleidungs-Channels."""
+    groesse = item.get("size_title","").strip().lower()
+    if not groesse:
+        return True  # Kein Größenangabe → durchlassen
+    return groesse in ERLAUBTE_GROESSEN
+
 def kleidung_ok(item):
     titel   = item.get("title","").lower()
     groesse = item.get("size_title","").strip().lower()
     land    = item.get("user",{}).get("country_iso","").upper()
     if any(v in titel for v in VERBOTEN_KLEIDUNG): return False
     if groesse in VERBOTEN_GROESSEN: return False
+    if not groesse_ok(item): return False
     if land and land not in {"DE","AT","CH","IT","FR","ES"}: return False
     return True
 
@@ -309,24 +317,20 @@ def accessoire_ok(item):
     return True
 
 def monitor_filter_ok(item, f: dict) -> bool:
-    """Prüft ob ein Artikel zu den Monitor-Filtern passt."""
     titel   = item.get("title","").lower()
     groesse = item.get("size_title","").strip().lower()
     preis   = float(item.get("price",{}).get("amount", 0))
-
-    if not kleidung_ok(item):
-        return False
-    if f.get("pmax") and preis > f["pmax"]:
-        return False
-    if f.get("pmin") and preis < f["pmin"]:
-        return False
-    if f.get("groesse") and f["groesse"].lower() not in groesse:
-        return False
-    if f.get("stichwort") and f["stichwort"].lower() not in titel:
-        return False
+    if any(v in titel for v in VERBOTEN_KLEIDUNG): return False
+    if groesse in VERBOTEN_GROESSEN: return False
+    if f.get("pmax") and preis > f["pmax"]: return False
+    if f.get("pmin") and preis < f["pmin"]: return False
+    if f.get("groesse") and f["groesse"].lower() not in groesse: return False
+    if f.get("stichwort") and f["stichwort"].lower() not in titel: return False
+    land = item.get("user",{}).get("country_iso","").upper()
+    if land and land not in {"DE","AT","CH","IT","FR","ES"}: return False
     return True
 
-# ─── Embed ────────────────────────────────────────────────────────
+# ─── Embed & Send ─────────────────────────────────────────────────
 def build_embed(item, cat_name, cat_color):
     title     = item.get("title","Unbekannt")
     price     = item.get("price",{})
@@ -339,7 +343,6 @@ def build_embed(item, cat_name, cat_color):
     seller    = item.get("user",{}).get("login","—")
     seller_id = item.get("user",{}).get("id","")
     seller_url = f"https://www.vinted.de/member/{seller_id}"
-
     zustand_map = {
         "Neu mit Etikett":   "🔵 Neu mit Etikett",
         "Neu ohne Etikett":  "🟢 Neu ohne Etikett",
@@ -348,14 +351,12 @@ def build_embed(item, cat_name, cat_color):
         "Zufriedenstellend": "🔴 Zufriedenstellend",
     }
     status_display = zustand_map.get(status, f"✨ {status}")
-
     e = discord.Embed(color=cat_color)
     e.set_author(name=f"{cat_name}  •  Vinted Snipebot",
                  icon_url="https://www.vinted.de/favicon.ico")
     e.title = f"**{title}**"
     e.url   = url
     e.description = f"## 💶  {pstr}\n━━━━━━━━━━━━━━━━━━━━━━━━"
-
     e.add_field(name="🏷️  Marke",     value=f"`{brand}`",                inline=True)
     e.add_field(name="📏  Größe",      value=f"`{size}`",                 inline=True)
     e.add_field(name="✨  Zustand",    value=status_display,              inline=True)
@@ -366,7 +367,6 @@ def build_embed(item, cat_name, cat_color):
     e.set_footer(text="Vinted Snipebot  •  VintedHub")
     return e, imgs
 
-# ─── Buttons ──────────────────────────────────────────────────────
 class ArtikelView(discord.ui.View):
     def __init__(self, url: str):
         super().__init__(timeout=None)
@@ -374,12 +374,10 @@ class ArtikelView(discord.ui.View):
         self.add_item(discord.ui.Button(label="❤️ Favorisieren",        style=discord.ButtonStyle.link, url=url))
         self.add_item(discord.ui.Button(label="💳 Sofort kaufen",       style=discord.ButtonStyle.link, url=f"{url}#buy"))
 
-# ─── Send Helper ──────────────────────────────────────────────────
 async def send_item(channel, item, cat_name, cat_color):
     main_embed, imgs = build_embed(item, cat_name, cat_color)
     img_urls = [i.get("url","") for i in imgs[:3] if i.get("url")]
     view     = ArtikelView(url=f"https://www.vinted.de/items/{item.get('id')}")
-
     if len(img_urls) > 1:
         grid = await asyncio.to_thread(make_image_grid, img_urls)
         if grid:
@@ -390,13 +388,13 @@ async def send_item(channel, item, cat_name, cat_color):
         main_embed.set_image(url=img_urls[0])
     await channel.send(embed=main_embed, view=view)
 
-# ─── Bot Setup ────────────────────────────────────────────────────
+# ─── Bot ──────────────────────────────────────────────────────────
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot  = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
-# ─── Slash Command: /monitor ──────────────────────────────────────
+# ─── Slash Commands ───────────────────────────────────────────────
 @tree.command(name="monitor", description="Erstelle deinen privaten Vinted Monitor Channel")
 @app_commands.describe(
     marke="Markenname (z.B. Nike, Adidas, Lacoste...)",
@@ -404,57 +402,43 @@ tree = bot.tree
     groesse="Größe filtern (z.B. M, L, XL) – optional",
     stichwort="Stichwort im Titel (z.B. hoodie) – optional"
 )
-async def monitor_cmd(interaction: discord.Interaction,
-                      marke: str,
-                      max_preis: float,
-                      groesse: str = "",
-                      stichwort: str = ""):
-    user = interaction.user
+async def monitor_cmd(interaction: discord.Interaction, marke: str, max_preis: float,
+                      groesse: str = "", stichwort: str = ""):
+    user  = interaction.user
     guild = interaction.guild
 
-    # Prüfen ob User schon einen Monitor hat
     if user.id in monitor_sessions:
-        sess = monitor_sessions[user.id]
+        sess   = monitor_sessions[user.id]
         ch_obj = guild.get_channel(sess["channel_id"])
         if ch_obj:
             await interaction.response.send_message(
-                f"❌ Du hast bereits einen aktiven Monitor: {ch_obj.mention}\nDieser läuft noch **{int((sess['expires_at'] - time.time()) / 60)} Minuten**.",
-                ephemeral=True
-            )
+                f"❌ Du hast bereits einen aktiven Monitor: {ch_obj.mention}\n"
+                f"Noch **{int((sess['expires_at'] - time.time()) / 60)} Minuten** aktiv.",
+                ephemeral=True)
             return
 
-    # Marke auflösen
     brand_id = BRAND_MAP.get(marke.lower())
     if not brand_id:
         await interaction.response.send_message(
-            f"❌ Marke `{marke}` nicht gefunden. Verfügbare Marken:\n" +
-            ", ".join([f"`{k}`" for k in BRAND_MAP.keys()]),
-            ephemeral=True
-        )
+            f"❌ Marke `{marke}` nicht gefunden.\nVerfügbar: " +
+            ", ".join([f"`{k}`" for k in sorted(BRAND_MAP.keys())]),
+            ephemeral=True)
         return
 
     await interaction.response.defer(ephemeral=True)
 
-    # Kategorie für private Channels finden
     category = guild.get_channel(MONITOR_CAT_ID) if MONITOR_CAT_ID else None
-
-    # Channel erstellen – nur für den User sichtbar
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False),
-        user: discord.PermissionOverwrite(read_messages=True, send_messages=False),
-        guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        user:               discord.PermissionOverwrite(read_messages=True, send_messages=False),
+        guild.me:           discord.PermissionOverwrite(read_messages=True, send_messages=True),
     }
-
     channel_name = f"🔍-monitor-{user.name}".lower().replace(" ", "-")[:100]
-    new_channel = await guild.create_text_channel(
-        name=channel_name,
-        category=category,
-        overwrites=overwrites,
-        topic=f"Privater Monitor für {user.name} | {marke} | Max {max_preis}€"
-    )
+    new_channel  = await guild.create_text_channel(
+        name=channel_name, category=category, overwrites=overwrites,
+        topic=f"Privater Monitor für {user.name} | {marke} | Max {max_preis}€")
 
     expires_at = time.time() + MONITOR_TTL
-
     monitor_sessions[user.id] = {
         "channel_id": new_channel.id,
         "brand_id":   brand_id,
@@ -467,37 +451,27 @@ async def monitor_cmd(interaction: discord.Interaction,
         "seen":       set(),
     }
 
-    # Info-Nachricht im neuen Channel
-    info = discord.Embed(
-        title="🔍 Dein privater Vinted Monitor",
-        color=0x09B1BA,
-        description="Neue Artikel werden hier automatisch gepostet!"
-    )
-    info.add_field(name="🏷️ Marke",      value=f"`{marke}`",             inline=True)
-    info.add_field(name="💶 Max Preis",   value=f"`{max_preis}€`",        inline=True)
-    info.add_field(name="📏 Größe",       value=f"`{groesse or 'Alle'}`", inline=True)
-    info.add_field(name="🔎 Stichwort",   value=f"`{stichwort or 'Keins'}`", inline=True)
-    info.add_field(name="⏱️ Läuft ab",   value=f"<t:{int(expires_at)}:R>",inline=True)
+    info = discord.Embed(title="🔍 Dein privater Vinted Monitor", color=0x09B1BA,
+                         description="Neue Artikel werden hier automatisch gepostet!")
+    info.add_field(name="🏷️ Marke",    value=f"`{marke}`",             inline=True)
+    info.add_field(name="💶 Max Preis", value=f"`{max_preis}€`",        inline=True)
+    info.add_field(name="📏 Größe",     value=f"`{groesse or 'Alle'}`", inline=True)
+    info.add_field(name="🔎 Stichwort", value=f"`{stichwort or 'Keins'}`", inline=True)
+    info.add_field(name="⏱️ Läuft ab", value=f"<t:{int(expires_at)}:R>",inline=True)
     info.set_footer(text="Channel wird nach 5 Stunden automatisch gelöscht.")
     await new_channel.send(embed=info)
-
     await interaction.followup.send(
-        f"✅ Dein privater Monitor wurde erstellt: {new_channel.mention}\nEr läuft **5 Stunden** und wird dann automatisch gelöscht.",
-        ephemeral=True
-    )
+        f"✅ Dein Monitor wurde erstellt: {new_channel.mention}\nLäuft **5 Stunden**.", ephemeral=True)
     print(f"[Monitor] {user.name} → {marke} max {max_preis}€")
 
-# ─── Monitor Cleanup Loop ─────────────────────────────────────────
 @tree.command(name="monitor-loeschen", description="Lösche deinen privaten Monitor Channel")
 async def monitor_delete_cmd(interaction: discord.Interaction):
-    user = interaction.user
+    user  = interaction.user
     guild = interaction.guild
-
     if user.id not in monitor_sessions:
         await interaction.response.send_message("❌ Du hast keinen aktiven Monitor.", ephemeral=True)
         return
-
-    sess = monitor_sessions.pop(user.id)
+    sess   = monitor_sessions.pop(user.id)
     ch_obj = guild.get_channel(sess["channel_id"])
     if ch_obj:
         await interaction.response.send_message("✅ Monitor wird gelöscht...", ephemeral=True)
@@ -505,7 +479,17 @@ async def monitor_delete_cmd(interaction: discord.Interaction):
         await ch_obj.delete()
     else:
         await interaction.response.send_message("✅ Monitor gelöscht!", ephemeral=True)
-    print(f"[Monitor] {user.name} hat seinen Monitor gelöscht")
+
+@bot.command(name="sync")
+async def sync_cmd(ctx):
+    guild = discord.Object(id=GUILD_ID)
+    tree.copy_global_to(guild=guild)
+    await tree.sync(guild=guild)
+    await ctx.send("✅ Slash Commands synchronisiert!")
+
+# ─── Loops ────────────────────────────────────────────────────────
+@tasks.loop(minutes=1)
+async def cleanup_monitors():
     now = time.time()
     to_delete = [uid for uid, s in monitor_sessions.items() if now >= s["expires_at"]]
     for uid in to_delete:
@@ -514,14 +498,38 @@ async def monitor_delete_cmd(interaction: discord.Interaction):
             ch_obj = guild.get_channel(sess["channel_id"])
             if ch_obj:
                 try:
-                    await ch_obj.send("⏱️ **Session abgelaufen.** Dieser Channel wird in 10 Sekunden gelöscht. Erstelle mit `/monitor` eine neue Session!")
+                    await ch_obj.send("⏱️ **Session abgelaufen.** Channel wird in 10 Sekunden gelöscht. Erstelle mit `/monitor` eine neue Session!")
                     await asyncio.sleep(10)
                     await ch_obj.delete()
-                    print(f"[Monitor] Channel gelöscht: {sess['channel_id']}")
                 except:
                     pass
 
-# ─── Haupt Check Loop ─────────────────────────────────────────────
+@tasks.loop(seconds=55)
+async def check_monitors():
+    if first_run:
+        return
+    for uid, sess in list(monitor_sessions.items()):
+        try:
+            items = await fetch_items([sess["brand_id"]], per_page=10)
+        except Exception as e:
+            print(f"[Monitor Fehler] Fetch: {e}")
+            continue
+        for item in items:
+            iid = item.get("id")
+            if not iid or iid in sess["seen"]:
+                continue
+            sess["seen"].add(iid)
+            if not monitor_filter_ok(item, sess):
+                continue
+            ch_obj = bot.get_channel(sess["channel_id"])
+            if not ch_obj:
+                continue
+            try:
+                await send_item(ch_obj, item, f"🔍 Monitor • {sess['marke']}", 0x09B1BA)
+                print(f"[Monitor] ✅ {sess['marke']} → {item.get('title')}")
+            except Exception as e:
+                print(f"[Monitor Fehler] Send: {e}")
+
 def get_brand_requests():
     seen, result = set(), []
     for cat in CATEGORIES:
@@ -529,12 +537,6 @@ def get_brand_requests():
         if key not in seen:
             seen.add(key)
             result.append(cat["brands"])
-    # Monitor-Marken ergänzen
-    for sess in monitor_sessions.values():
-        key = (sess["brand_id"],)
-        if key not in seen:
-            seen.add(key)
-            result.append([sess["brand_id"]])
     return result
 
 @tasks.loop(seconds=55)
@@ -556,76 +558,46 @@ async def check_all():
 
         for item in items:
             iid = item.get("id")
-            if not iid:
+            if not iid or iid in global_seen:
                 continue
+            global_seen.add(iid)
+            posted = False
 
-            # ── Haupt-Channels ────────────────────────────────────
-            if iid not in global_seen:
-                global_seen.add(iid)
-                posted = False
-
-                for cat in CATEGORIES:
-                    if tuple(sorted(cat["brands"])) != tuple(sorted(brand_ids)):
-                        continue
-                    if cat["ch"] == 0:
-                        continue
-                    if iid in seen_ids[cat["name"]]:
-                        continue
-                    if not preis_ok(item, cat["pmin"], cat["pmax"]):
-                        continue
-                    if not keyword_ok(item, cat["kw"]):
-                        continue
-                    if cat["typ"] == "kleidung" and not kleidung_ok(item):
-                        continue
-                    if cat["typ"] == "accessoire" and not accessoire_ok(item):
-                        continue
-
-                    seen_ids[cat["name"]].add(iid)
-                    if first_run:
-                        continue
-
-                    channel = bot.get_channel(cat["ch"])
-                    if not channel:
-                        continue
-
-                    try:
-                        await send_item(channel, item, cat["name"], cat["color"])
-                        print(f"✅ [{cat['name']}] {item.get('title')}")
-                        posted = True
-                    except Exception as e:
-                        print(f"[Fehler] [{cat['name']}]: {e}")
-
-                if posted:
-                    save_seen()
-
-            # ── Private Monitor Channels ──────────────────────────
-            for uid, sess in list(monitor_sessions.items()):
-                if sess["brand_id"] not in brand_ids:
+            for cat in CATEGORIES:
+                if tuple(sorted(cat["brands"])) != tuple(sorted(brand_ids)):
                     continue
-                if iid in sess["seen"]:
+                if cat["ch"] == 0:
                     continue
-                sess["seen"].add(iid)
+                if iid in seen_ids[cat["name"]]:
+                    continue
+                if not preis_ok(item, cat["pmin"], cat["pmax"]):
+                    continue
+                if not keyword_ok(item, cat["kw"]):
+                    continue
+                if cat["typ"] == "kleidung" and not kleidung_ok(item):
+                    continue
+                if cat["typ"] == "accessoire" and not accessoire_ok(item):
+                    continue
+
+                seen_ids[cat["name"]].add(iid)
                 if first_run:
                     continue
-                if not monitor_filter_ok(item, sess):
+
+                channel = bot.get_channel(cat["ch"])
+                if not channel:
                     continue
 
-                ch_obj = bot.get_channel(sess["channel_id"])
-                if not ch_obj:
-                    continue
                 try:
-                    await send_item(ch_obj, item, f"Monitor • {sess['marke']}", 0x09B1BA)
+                    await send_item(channel, item, cat["name"], cat["color"])
+                    print(f"✅ [{cat['name']}] {item.get('title')}")
+                    posted = True
                 except Exception as e:
-                    print(f"[Monitor Fehler]: {e}")
+                    print(f"[Fehler] [{cat['name']}]: {e}")
+
+            if posted:
+                save_seen()
 
     first_run = False
-
-@bot.command(name="sync")
-async def sync_cmd(ctx):
-    guild = discord.Object(id=GUILD_ID)
-    tree.copy_global_to(guild=guild)
-    await tree.sync(guild=guild)
-    await ctx.send("✅ Slash Commands synchronisiert!")
 
 @bot.event
 async def on_ready():
@@ -633,9 +605,12 @@ async def on_ready():
     print(f"📦 {len(CATEGORIES)} Kategorien | 55s Intervall")
     for cat in CATEGORIES:
         print(f"   {'✅' if cat['ch'] != 0 else '❌'} {cat['name']}")
-    await tree.sync()
+    guild = discord.Object(id=GUILD_ID)
+    tree.copy_global_to(guild=guild)
+    await tree.sync(guild=guild)
     print("✅ Slash Commands synchronisiert")
     check_all.start()
     cleanup_monitors.start()
+    check_monitors.start()
 
 bot.run(DISCORD_TOKEN)
