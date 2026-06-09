@@ -604,6 +604,11 @@ async def check_all():
 
     first_run = False
 
+@bot.command(name="sync")
+async def sync_cmd(ctx):
+    await tree.sync()
+    await ctx.send("✅ Slash Commands synchronisiert!")
+
 @bot.event
 async def on_ready():
     print(f"✅ Snipebot online: {bot.user}")
