@@ -1,10 +1,3 @@
-"""
-Vinted Snipebot – Neue Channel Struktur
-========================================
-Tagsüber (13:00–02:00): 1 Minute Interval
-Nachts (02:00–13:00): 20 Minuten Interval
-"""
-
 import discord
 from discord.ext import tasks
 import requests
@@ -31,27 +24,24 @@ ADIDAS       = 14
 LACOSTE      = 304
 RL           = 88
 FRED_PERRY   = 2929
-LYLE_SCOTT   = 2026
-LONSDALE     = 304  # Lonsdale ID
-CP_COMPANY   = 2165
-LA_MARTINA   = 1234
-DOLCE        = 369
-ARMANI       = 213
-DIESEL       = 99
-CALVIN_KLEIN = 36
+LYLE_SCOTT   = 66644
+LONSDALE     = 2193
+CP_COMPANY   = 73952
+LA_MARTINA   = 97
+DOLCE        = 1043
+ARMANI       = 5930015
+DIESEL       = 161
+CALVIN_KLEIN = 255
 TOMMY        = 94
-STONE_ISLAND = 2522
-BURBERRY     = 228
-MONCLER      = 1514
-LEVIS        = 97
-MISS_ME      = 1337
-TRUE_REL     = 1338
-GSTAR        = 224
+STONE_ISLAND = 73306
+BURBERRY     = 364
+MONCLER      = 6539
+LEVIS        = 10
+MISS_ME      = 35693
+TRUE_REL     = 9075
+GSTAR        = 258
 
-# Beste Resell-Marken für Preis/Mix Channels
 TOP_BRANDS = [NIKE, ADIDAS, LACOSTE, RL, FRED_PERRY, STONE_ISLAND, CP_COMPANY, TOMMY, BURBERRY, MONCLER]
-
-# Alle Marken
 ALL_BRANDS = [NIKE, ADIDAS, LACOSTE, RL, FRED_PERRY, LYLE_SCOTT, LONSDALE,
               CP_COMPANY, LA_MARTINA, DOLCE, ARMANI, DIESEL, CALVIN_KLEIN,
               TOMMY, STONE_ISLAND, BURBERRY, MONCLER, LEVIS, MISS_ME, TRUE_REL, GSTAR]
@@ -72,14 +62,12 @@ KW_CAPS     = ["cap","snapback","baseball cap","trucker cap","fitted cap","dad c
 
 # ─── Filter ───────────────────────────────────────────────────────
 VERBOTEN_KLEIDUNG = [
-    # Schuhe
     "schuh","schuhe","stiefel","turnschuh","laufschuh","slipper","sandale","sandalen",
     "sneaker","sneakers","boots","loafer","pumps","ballerina","shoe","shoes","footwear",
     "scarpe","scarpa","zapato","zapatos","zapatilla","zapatillas",
     "chaussure","chaussures","schoen","schoenen",
     "air max","air force","dunk","yeezy","campus","gazelle","samba",
     "superstar","stan smith","ultraboost","nmd","converse","vans","timberland","ugg","crocs",
-    # Kinder
     "kinder","kinderjacke","kinderhose","kindershirt","baby","babykleidung","kleinkind",
     "kids","children","child","toddler","infant","newborn",
     "bambino","bambina","bambini","neonato","bimbo","bimba",
@@ -89,7 +77,6 @@ VERBOTEN_KLEIDUNG = [
 ]
 
 VERBOTEN_ACCESSOIRES = [
-    # Kein Filter für Accessoire-Channels – nur Schuhe und Kinder raus
     "schuh","schuhe","sneaker","sneakers","boots","shoe","shoes",
     "scarpe","scarpa","zapato","zapatos","chaussure","schoen",
     "kinder","baby","kids","children","bambino","bambina","enfant","niño","niña",
@@ -109,70 +96,39 @@ VERBOTEN_GROESSEN = (
 def ch(key): return int(os.getenv(key, 0))
 
 CATEGORIES = [
-    # ── PREIS CHANNELS (alle Top-Marken) ──────────────────────────
-    {"name":"Under 5€",    "brands":TOP_BRANDS, "pmin":0.01, "pmax":5,    "kw":None, "ch":ch("CHANNEL_UNDER_5"),  "color":0xFFD700, "typ":"kleidung"},
-    {"name":"Under 10€",   "brands":TOP_BRANDS, "pmin":5.01, "pmax":10,   "kw":None, "ch":ch("CHANNEL_UNDER_10"), "color":0xFFD700, "typ":"kleidung"},
-
-    # ── MARKEN CHANNELS ───────────────────────────────────────────
-    {"name":"Nike",         "brands":[NIKE],         "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_NIKE"),         "color":0xF5821F, "typ":"kleidung"},
-    {"name":"Adidas",       "brands":[ADIDAS],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_ADIDAS"),       "color":0x000000, "typ":"kleidung"},
-    {"name":"Lacoste",      "brands":[LACOSTE],      "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LACOSTE"),      "color":0x00A850, "typ":"kleidung"},
-    {"name":"Ralph Lauren", "brands":[RL],           "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_RL"),           "color":0x002868, "typ":"kleidung"},
-    {"name":"Fred Perry",   "brands":[FRED_PERRY],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_FRED_PERRY"),   "color":0xCC0000, "typ":"kleidung"},
-    {"name":"Lyle Scott",   "brands":[LYLE_SCOTT],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LYLE_SCOTT"),   "color":0x1a1a2e, "typ":"kleidung"},
-    {"name":"Lonsdale",     "brands":[LONSDALE],     "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LONSDALE"),     "color":0xCC0000, "typ":"kleidung"},
-    {"name":"CP Company",   "brands":[CP_COMPANY],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_CP_COMPANY"),   "color":0x1a1a1a, "typ":"kleidung"},
-    {"name":"La Martina",   "brands":[LA_MARTINA],   "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LA_MARTINA"),   "color":0x003580, "typ":"kleidung"},
-    {"name":"Dolce Gabbana","brands":[DOLCE],        "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_DOLCE_GABBANA"),"color":0xFFD700, "typ":"kleidung"},
-    {"name":"Armani",       "brands":[ARMANI],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_ARMANI"),       "color":0x1a1a1a, "typ":"kleidung"},
-    {"name":"Diesel",       "brands":[DIESEL],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_DIESEL"),       "color":0xCC0000, "typ":"kleidung"},
-    {"name":"Calvin Klein", "brands":[CALVIN_KLEIN], "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_CALVIN_KLEIN"), "color":0x000000, "typ":"kleidung"},
-    {"name":"Tommy Hilfiger","brands":[TOMMY],       "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_TOMMY"),        "color":0xCC0000, "typ":"kleidung"},
-    {"name":"Stone Island", "brands":[STONE_ISLAND], "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_STONE_ISLAND"), "color":0x1a1a1a, "typ":"kleidung"},
-    {"name":"Burberry",     "brands":[BURBERRY],     "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_BURBERRY"),     "color":0xC4A45A, "typ":"kleidung"},
-    {"name":"Moncler",      "brands":[MONCLER],      "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_MONCLER"),      "color":0x003580, "typ":"kleidung"},
-    {"name":"Levis",        "brands":[LEVIS],        "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_LEVIS"),        "color":0xCC0000, "typ":"kleidung"},
-    {"name":"Miss Me",      "brands":[MISS_ME],      "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_MISS_ME"),      "color":0x9b59b6, "typ":"kleidung"},
-    {"name":"True Religion","brands":[TRUE_REL],     "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_TRUE_RELIGION"),"color":0x1a1a1a, "typ":"kleidung"},
-    {"name":"G-Star",       "brands":[GSTAR],        "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_GSTAR"),        "color":0x000000, "typ":"kleidung"},
-
-    # ── MIX CHANNELS ──────────────────────────────────────────────
-    {"name":"Trikot Mix",  "brands":[NIKE,ADIDAS],                              "pmin":None,"pmax":None,"kw":KW_TRIKOTS,"ch":ch("CHANNEL_TRIKOT_MIX"), "color":0x09B1BA,"typ":"kleidung"},
-    {"name":"Polo Mix",    "brands":[LACOSTE,RL,FRED_PERRY,LA_MARTINA,TOMMY],  "pmin":None,"pmax":None,"kw":KW_POLOS,  "ch":ch("CHANNEL_POLO_MIX"),   "color":0x00A850,"typ":"kleidung"},
-    {"name":"Jacken Mix",  "brands":[STONE_ISLAND,CP_COMPANY,MONCLER,BURBERRY,TOMMY,RL], "pmin":None,"pmax":None,"kw":KW_JACKEN,"ch":ch("CHANNEL_JACKEN_MIX"),"color":0x1a1a1a,"typ":"kleidung"},
-
-    # ── ACCESSOIRE CHANNELS ───────────────────────────────────────
-    {"name":"Gürtel",  "brands":ALL_BRANDS,"pmin":None,"pmax":None,"kw":KW_GUERTEL,"ch":ch("CHANNEL_GUERTEL"),"color":0x8B4513,"typ":"accessoire"},
-    {"name":"Taschen", "brands":ALL_BRANDS,"pmin":None,"pmax":None,"kw":KW_TASCHEN,"ch":ch("CHANNEL_TASCHEN"),"color":0x8B4513,"typ":"accessoire"},
-    {"name":"Caps",    "brands":ALL_BRANDS,"pmin":None,"pmax":None,"kw":KW_CAPS,   "ch":ch("CHANNEL_CAPS"),   "color":0x8B4513,"typ":"accessoire"},
+    {"name":"Under 5€",      "brands":TOP_BRANDS,     "pmin":0.01, "pmax":5,    "kw":None,       "ch":ch("CHANNEL_UNDER_5"),      "color":0xFFD700, "typ":"kleidung"},
+    {"name":"Under 10€",     "brands":TOP_BRANDS,     "pmin":5.01, "pmax":10,   "kw":None,       "ch":ch("CHANNEL_UNDER_10"),     "color":0xFFD700, "typ":"kleidung"},
+    {"name":"Nike",          "brands":[NIKE],          "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_NIKE"),         "color":0xF5821F, "typ":"kleidung"},
+    {"name":"Adidas",        "brands":[ADIDAS],        "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_ADIDAS"),       "color":0x000000, "typ":"kleidung"},
+    {"name":"Lacoste",       "brands":[LACOSTE],       "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_LACOSTE"),      "color":0x00A850, "typ":"kleidung"},
+    {"name":"Ralph Lauren",  "brands":[RL],            "pmin":None, "pmax":15,   "kw":None,       "ch":ch("CHANNEL_RL"),           "color":0x002868, "typ":"kleidung"},
+    {"name":"Fred Perry",    "brands":[FRED_PERRY],    "pmin":None, "pmax":13,   "kw":None,       "ch":ch("CHANNEL_FRED_PERRY"),   "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Lyle Scott",    "brands":[LYLE_SCOTT],    "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_LYLE_SCOTT"),   "color":0x1a1a2e, "typ":"kleidung"},
+    {"name":"Lonsdale",      "brands":[LONSDALE],      "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_LONSDALE"),     "color":0xCC0000, "typ":"kleidung"},
+    {"name":"CP Company",    "brands":[CP_COMPANY],    "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_CP_COMPANY"),   "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"La Martina",    "brands":[LA_MARTINA],    "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_LA_MARTINA"),   "color":0x003580, "typ":"kleidung"},
+    {"name":"Dolce Gabbana", "brands":[DOLCE],         "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_DOLCE_GABBANA"),"color":0xFFD700, "typ":"kleidung"},
+    {"name":"Armani",        "brands":[ARMANI],        "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_ARMANI"),       "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"Diesel",        "brands":[DIESEL],        "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_DIESEL"),       "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Calvin Klein",  "brands":[CALVIN_KLEIN],  "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_CALVIN_KLEIN"), "color":0x000000, "typ":"kleidung"},
+    {"name":"Tommy Hilfiger","brands":[TOMMY],         "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_TOMMY"),        "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Stone Island",  "brands":[STONE_ISLAND],  "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_STONE_ISLAND"), "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"Burberry",      "brands":[BURBERRY],      "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_BURBERRY"),     "color":0xC4A45A, "typ":"kleidung"},
+    {"name":"Moncler",       "brands":[MONCLER],       "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_MONCLER"),      "color":0x003580, "typ":"kleidung"},
+    {"name":"Levis",         "brands":[LEVIS],         "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_LEVIS"),        "color":0xCC0000, "typ":"kleidung"},
+    {"name":"Miss Me",       "brands":[MISS_ME],       "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_MISS_ME"),      "color":0x9b59b6, "typ":"kleidung"},
+    {"name":"True Religion", "brands":[TRUE_REL],      "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_TRUE_RELIGION"),"color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"G-Star",        "brands":[GSTAR],         "pmin":None, "pmax":None, "kw":None,       "ch":ch("CHANNEL_GSTAR"),        "color":0x000000, "typ":"kleidung"},
+    {"name":"Trikot Mix",    "brands":[NIKE,ADIDAS],                "pmin":None, "pmax":None, "kw":KW_TRIKOTS, "ch":ch("CHANNEL_TRIKOT_MIX"),  "color":0x09B1BA, "typ":"kleidung"},
+    {"name":"Polo Mix",      "brands":[LACOSTE,RL,FRED_PERRY,LA_MARTINA,TOMMY], "pmin":None, "pmax":None, "kw":KW_POLOS,   "ch":ch("CHANNEL_POLO_MIX"),    "color":0x00A850, "typ":"kleidung"},
+    {"name":"Jacken Mix",    "brands":[STONE_ISLAND,CP_COMPANY,MONCLER,BURBERRY,TOMMY,RL], "pmin":None, "pmax":None, "kw":KW_JACKEN, "ch":ch("CHANNEL_JACKEN_MIX"),  "color":0x1a1a1a, "typ":"kleidung"},
+    {"name":"Gürtel",        "brands":ALL_BRANDS,      "pmin":None, "pmax":None, "kw":KW_GUERTEL, "ch":ch("CHANNEL_GUERTEL"),      "color":0x8B4513, "typ":"accessoire"},
+    {"name":"Taschen",       "brands":ALL_BRANDS,      "pmin":None, "pmax":None, "kw":KW_TASCHEN, "ch":ch("CHANNEL_TASCHEN"),      "color":0x8B4513, "typ":"accessoire"},
+    {"name":"Caps",          "brands":ALL_BRANDS,      "pmin":None, "pmax":None, "kw":KW_CAPS,    "ch":ch("CHANNEL_CAPS"),         "color":0x8B4513, "typ":"accessoire"},
 ]
 
 # ─── Seen IDs ─────────────────────────────────────────────────────
-def make_image_grid(img_urls: list[str]) -> io.BytesIO | None:
-    """Fügt bis zu 3 Bilder zu einem Grid zusammen."""
-    try:
-        images = []
-        for url in img_urls[:3]:
-            resp = requests.get(url, timeout=10)
-            img = Image.open(io.BytesIO(resp.content)).convert("RGB")
-            img = img.resize((400, 400))
-            images.append(img)
-
-        if not images:
-            return None
-
-        w = 400 * len(images)
-        grid = Image.new("RGB", (w, 400), (20, 20, 20))
-        for i, img in enumerate(images):
-            grid.paste(img, (i * 400, 0))
-
-        buf = io.BytesIO()
-        grid.save(buf, format="JPEG", quality=85)
-        buf.seek(0)
-        return buf
-    except Exception as e:
-        print(f"[Warnung] Grid Fehler: {e}")
-        return None
+def load_seen() -> dict:
     try:
         with open(SEEN_FILE, "r") as f:
             data = json.load(f)
@@ -193,10 +149,32 @@ for cat in CATEGORIES:
         seen_ids[cat["name"]] = set()
 
 global_seen: set[int] = {iid for s in seen_ids.values() for iid in s}
-first_run     = True
+first_run      = True
 cookie_session = None
 cookie_counter = 0
 COOKIE_REFRESH = 5
+
+# ─── Image Grid ───────────────────────────────────────────────────
+def make_image_grid(img_urls: list) -> io.BytesIO | None:
+    try:
+        images = []
+        for url in img_urls[:3]:
+            resp = requests.get(url, timeout=10)
+            img  = Image.open(io.BytesIO(resp.content)).convert("RGB")
+            img  = img.resize((400, 400))
+            images.append(img)
+        if not images:
+            return None
+        grid = Image.new("RGB", (400 * len(images), 400), (20, 20, 20))
+        for i, img in enumerate(images):
+            grid.paste(img, (i * 400, 0))
+        buf = io.BytesIO()
+        grid.save(buf, format="JPEG", quality=85)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        print(f"[Warnung] Grid Fehler: {e}")
+        return None
 
 # ─── API ──────────────────────────────────────────────────────────
 VINTED_TOKEN = os.getenv("VINTED_TOKEN")
@@ -229,7 +207,7 @@ def refresh_session():
     cookie_session = s
     print("[Info] Session erneuert")
 
-def _fetch(brand_ids, per_page=20):
+def _fetch(brand_ids, per_page=6):
     global cookie_session
     if cookie_session is None:
         refresh_session()
@@ -248,7 +226,7 @@ def _fetch(brand_ids, per_page=20):
         refresh_session()
         return []
 
-async def fetch_items(brand_ids, per_page=20):
+async def fetch_items(brand_ids, per_page=6):
     try:
         return await asyncio.to_thread(_fetch, brand_ids, per_page)
     except Exception as e:
@@ -288,25 +266,24 @@ def accessoire_ok(item):
 
 # ─── Embed ────────────────────────────────────────────────────────
 def build_embed(item, cat):
-    title  = item.get("title", "Unbekannt")
-    price  = item.get("price", {})
-    pstr   = f"{price.get('amount', '?')} {price.get('currency_code', 'EUR')}"
-    url    = f"https://www.vinted.de/items/{item.get('id')}"
-    imgs   = item.get("photos", [])
-    brand  = item.get("brand_title", "—")
-    size   = item.get("size_title", "—")
-    status = item.get("status", "—")
-    seller = item.get("user", {}).get("login", "—")
-    seller_id = item.get("user", {}).get("id", "")
+    title     = item.get("title","Unbekannt")
+    price     = item.get("price",{})
+    pstr      = f"{price.get('amount','?')} {price.get('currency_code','EUR')}"
+    url       = f"https://www.vinted.de/items/{item.get('id')}"
+    imgs      = item.get("photos",[])
+    brand     = item.get("brand_title","—")
+    size      = item.get("size_title","—")
+    status    = item.get("status","—")
+    seller    = item.get("user",{}).get("login","—")
+    seller_id = item.get("user",{}).get("id","")
     seller_url = f"https://www.vinted.de/member/{seller_id}"
 
-    # Zustand zu Emoji mappen
     zustand_map = {
-        "Neu mit Etikett": "🔵 Neu mit Etikett",
-        "Neu ohne Etikett": "🟢 Neu ohne Etikett",
-        "Sehr gut": "🟡 Sehr gut",
-        "Gut": "🟠 Gut",
-        "Zufriedenstellend": "🔴 Zufriedenstellend",
+        "Neu mit Etikett":     "🔵 Neu mit Etikett",
+        "Neu ohne Etikett":    "🟢 Neu ohne Etikett",
+        "Sehr gut":            "🟡 Sehr gut",
+        "Gut":                 "🟠 Gut",
+        "Zufriedenstellend":   "🔴 Zufriedenstellend",
     }
     status_display = zustand_map.get(status, f"✨ {status}")
 
@@ -315,23 +292,15 @@ def build_embed(item, cat):
                  icon_url="https://www.vinted.de/favicon.ico")
     e.title = f"**{title}**"
     e.url   = url
+    e.description = f"## 💶  {pstr}\n━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    e.description = (
-        f"## 💶  {pstr}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    )
-
-    e.add_field(name="🏷️  Marke",    value=f"`{brand}`",          inline=True)
-    e.add_field(name="📏  Größe",     value=f"`{size}`",            inline=True)
-    e.add_field(name="✨  Zustand",   value=status_display,         inline=True)
-    e.add_field(name="👤  Verkäufer", value=f"[{seller}]({seller_url})", inline=True)
-    e.add_field(name="📦  Kategorie", value=f"`{cat['name']}`",    inline=True)
-    e.add_field(name="‎",             value="‎",                    inline=True)  # spacer
-    e.add_field(name="🔗  Zum Artikel", value=f"**[➜ Auf Vinted ansehen]({url})**", inline=False)
-
-    if imgs:
-        e.set_image(url=imgs[0].get("url", ""))
-
+    e.add_field(name="🏷️  Marke",     value=f"`{brand}`",               inline=True)
+    e.add_field(name="📏  Größe",      value=f"`{size}`",                inline=True)
+    e.add_field(name="✨  Zustand",    value=status_display,             inline=True)
+    e.add_field(name="👤  Verkäufer",  value=f"[{seller}]({seller_url})",inline=True)
+    e.add_field(name="📦  Kategorie",  value=f"`{cat['name']}`",        inline=True)
+    e.add_field(name="‎",              value="‎",                        inline=True)
+    e.add_field(name="🔗  Zum Artikel",value=f"**[➜ Auf Vinted ansehen]({url})**", inline=False)
     e.set_footer(text="Vinted Snipebot  •  VintedHub")
 
     return e, imgs
@@ -340,10 +309,8 @@ def build_embed(item, cat):
 intents = discord.Intents.default()
 client  = discord.Client(intents=intents)
 
-# Unique Brand-Anfragen zusammenstellen
 def get_brand_requests():
-    seen = set()
-    result = []
+    seen, result = set(), []
     for cat in CATEGORIES:
         key = tuple(sorted(cat["brands"]))
         if key not in seen:
@@ -374,9 +341,8 @@ async def check_all():
                 continue
 
             global_seen.add(iid)
-
-            # Finde alle passenden Channels für diesen Artikel
             posted = False
+
             for cat in CATEGORIES:
                 if tuple(sorted(cat["brands"])) != tuple(sorted(brand_ids)):
                     continue
@@ -388,15 +354,12 @@ async def check_all():
                     continue
                 if not keyword_ok(item, cat["kw"]):
                     continue
-
-                # Filter je nach Typ
                 if cat["typ"] == "kleidung" and not kleidung_ok(item):
                     continue
                 if cat["typ"] == "accessoire" and not accessoire_ok(item):
                     continue
 
                 seen_ids[cat["name"]].add(iid)
-
                 if first_run:
                     continue
 
@@ -409,14 +372,17 @@ async def check_all():
                     img_urls = [i.get("url","") for i in imgs[:3] if i.get("url")]
 
                     if len(img_urls) > 1:
-                        # Bilder zu Grid zusammenfügen
                         grid = await asyncio.to_thread(make_image_grid, img_urls)
                         if grid:
                             main_embed.set_image(url="attachment://grid.jpg")
                             await channel.send(embed=main_embed, file=discord.File(grid, filename="grid.jpg"))
                         else:
+                            if img_urls:
+                                main_embed.set_image(url=img_urls[0])
                             await channel.send(embed=main_embed)
                     else:
+                        if img_urls:
+                            main_embed.set_image(url=img_urls[0])
                         await channel.send(embed=main_embed)
 
                     print(f"✅ [{cat['name']}] {item.get('title')}")
@@ -432,7 +398,7 @@ async def check_all():
 @client.event
 async def on_ready():
     print(f"✅ Snipebot online: {client.user}")
-    print(f"📦 {len(CATEGORIES)} Kategorien")
+    print(f"📦 {len(CATEGORIES)} Kategorien | 55s Intervall")
     for cat in CATEGORIES:
         print(f"   {'✅' if cat['ch'] != 0 else '❌'} {cat['name']}")
     check_all.start()
