@@ -21,13 +21,6 @@ PROXIES       = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
 SEEN_FILE     = "seen_ids.json"
 REQUEST_DELAY = 5
 
-def get_interval() -> int:
-    from datetime import datetime
-    h = datetime.now().hour
-    if 2 <= h < 13:
-        return 1200  # 20 Min nachts
-    return 60        # 1 Min tagsüber
-
 LAENDER = ["7", "193", "195", "10", "6", "13"]
 
 # ─── Brand IDs ────────────────────────────────────────────────────
@@ -301,14 +294,9 @@ def get_brand_requests():
             result.append(cat["brands"])
     return result
 
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=55)
 async def check_all():
     global first_run, cookie_counter, global_seen
-
-    interval = get_interval()
-    if check_all.seconds != interval:
-        check_all.change_interval(seconds=interval)
-        print(f"[Info] Interval → {interval}s")
 
     cookie_counter += 1
     if cookie_counter >= COOKIE_REFRESH:
@@ -318,7 +306,7 @@ async def check_all():
     for brand_ids in get_brand_requests():
         try:
             await asyncio.sleep(REQUEST_DELAY)
-            items = await fetch_items(brand_ids, per_page=20)
+            items = await fetch_items(brand_ids, per_page=6)
         except Exception as e:
             print(f"[Fehler] Anfrage übersprungen: {e}")
             continue
