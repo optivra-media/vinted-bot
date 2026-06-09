@@ -11,6 +11,8 @@ import requests
 import asyncio
 import json
 import os
+import io
+from PIL import Image
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -146,7 +148,31 @@ CATEGORIES = [
 ]
 
 # ─── Seen IDs ─────────────────────────────────────────────────────
-def load_seen() -> dict:
+def make_image_grid(img_urls: list[str]) -> io.BytesIO | None:
+    """Fügt bis zu 3 Bilder zu einem Grid zusammen."""
+    try:
+        images = []
+        for url in img_urls[:3]:
+            resp = requests.get(url, timeout=10)
+            img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+            img = img.resize((400, 400))
+            images.append(img)
+
+        if not images:
+            return None
+
+        w = 400 * len(images)
+        grid = Image.new("RGB", (w, 400), (20, 20, 20))
+        for i, img in enumerate(images):
+            grid.paste(img, (i * 400, 0))
+
+        buf = io.BytesIO()
+        grid.save(buf, format="JPEG", quality=85)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        print(f"[Warnung] Grid Fehler: {e}")
+        return None
     try:
         with open(SEEN_FILE, "r") as f:
             data = json.load(f)
@@ -380,13 +406,18 @@ async def check_all():
 
                 try:
                     main_embed, imgs = build_embed(item, cat)
-                    await channel.send(embed=main_embed)
+                    img_urls = [i.get("url","") for i in imgs[:3] if i.get("url")]
 
-                    # Bis zu 2 weitere Bilder als extra Embeds
-                    for img in imgs[1:3]:
-                        extra = discord.Embed(color=cat["color"], url=f"https://www.vinted.de/items/{item.get('id')}")
-                        extra.set_image(url=img.get("url",""))
-                        await channel.send(embed=extra)
+                    if len(img_urls) > 1:
+                        # Bilder zu Grid zusammenfügen
+                        grid = await asyncio.to_thread(make_image_grid, img_urls)
+                        if grid:
+                            main_embed.set_image(url="attachment://grid.jpg")
+                            await channel.send(embed=main_embed, file=discord.File(grid, filename="grid.jpg"))
+                        else:
+                            await channel.send(embed=main_embed)
+                    else:
+                        await channel.send(embed=main_embed)
 
                     print(f"✅ [{cat['name']}] {item.get('title')}")
                     posted = True
