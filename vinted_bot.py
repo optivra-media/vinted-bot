@@ -606,7 +606,9 @@ async def check_all():
 
 @bot.command(name="sync")
 async def sync_cmd(ctx):
-    await tree.sync()
+    guild = discord.Object(id=GUILD_ID)
+    tree.copy_global_to(guild=guild)
+    await tree.sync(guild=guild)
     await ctx.send("✅ Slash Commands synchronisiert!")
 
 @bot.event
