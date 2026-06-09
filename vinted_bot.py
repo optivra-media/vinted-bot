@@ -488,8 +488,24 @@ async def monitor_cmd(interaction: discord.Interaction,
     print(f"[Monitor] {user.name} → {marke} max {max_preis}€")
 
 # ─── Monitor Cleanup Loop ─────────────────────────────────────────
-@tasks.loop(minutes=1)
-async def cleanup_monitors():
+@tree.command(name="monitor-loeschen", description="Lösche deinen privaten Monitor Channel")
+async def monitor_delete_cmd(interaction: discord.Interaction):
+    user = interaction.user
+    guild = interaction.guild
+
+    if user.id not in monitor_sessions:
+        await interaction.response.send_message("❌ Du hast keinen aktiven Monitor.", ephemeral=True)
+        return
+
+    sess = monitor_sessions.pop(user.id)
+    ch_obj = guild.get_channel(sess["channel_id"])
+    if ch_obj:
+        await interaction.response.send_message("✅ Monitor wird gelöscht...", ephemeral=True)
+        await asyncio.sleep(2)
+        await ch_obj.delete()
+    else:
+        await interaction.response.send_message("✅ Monitor gelöscht!", ephemeral=True)
+    print(f"[Monitor] {user.name} hat seinen Monitor gelöscht")
     now = time.time()
     to_delete = [uid for uid, s in monitor_sessions.items() if now >= s["expires_at"]]
     for uid in to_delete:
