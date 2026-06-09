@@ -108,8 +108,8 @@ def ch(key): return int(os.getenv(key, 0))
 
 CATEGORIES = [
     # ── PREIS CHANNELS (alle Top-Marken) ──────────────────────────
-    {"name":"Under 5€",    "brands":TOP_BRANDS, "pmin":0.01, "pmax":5,  "kw":None, "ch":ch("CHANNEL_UNDER_5"),  "color":0xFFD700, "typ":"kleidung"},
-    {"name":"Under 10€",   "brands":TOP_BRANDS, "pmin":0.01, "pmax":10, "kw":None, "ch":ch("CHANNEL_UNDER_10"), "color":0xFFD700, "typ":"kleidung"},
+    {"name":"Under 5€",    "brands":TOP_BRANDS, "pmin":0.01, "pmax":5,    "kw":None, "ch":ch("CHANNEL_UNDER_5"),  "color":0xFFD700, "typ":"kleidung"},
+    {"name":"Under 10€",   "brands":TOP_BRANDS, "pmin":5.01, "pmax":10,   "kw":None, "ch":ch("CHANNEL_UNDER_10"), "color":0xFFD700, "typ":"kleidung"},
 
     # ── MARKEN CHANNELS ───────────────────────────────────────────
     {"name":"Nike",         "brands":[NIKE],         "pmin":None, "pmax":None, "kw":None, "ch":ch("CHANNEL_NIKE"),         "color":0xF5821F, "typ":"kleidung"},
@@ -262,22 +262,53 @@ def accessoire_ok(item):
 
 # ─── Embed ────────────────────────────────────────────────────────
 def build_embed(item, cat):
-    title = item.get("title","Unbekannt")
-    price = item.get("price",{})
-    pstr  = f"{price.get('amount','?')} {price.get('currency_code','EUR')}"
-    url   = f"https://www.vinted.de/items/{item.get('id')}"
-    imgs  = item.get("photos",[])
-    img   = imgs[0].get("url") if imgs else None
-    e = discord.Embed(title=f"🛍️ {title}", url=url, color=cat["color"],
-                      description=f"**{cat['name']}**")
-    e.add_field(name="💶 Preis",     value=pstr,                                  inline=True)
-    e.add_field(name="📏 Größe",     value=item.get("size_title","—"),            inline=True)
-    e.add_field(name="✨ Zustand",   value=item.get("status","—"),                inline=True)
-    e.add_field(name="👤 Verkäufer", value=item.get("user",{}).get("login","—"),  inline=True)
-    e.add_field(name="🔗 Artikel",   value=f"[Auf Vinted ansehen]({url})",        inline=False)
-    if img: e.set_image(url=img)
-    e.set_footer(text=f"Vinted Snipebot • {cat['name']}")
-    return e
+    title  = item.get("title", "Unbekannt")
+    price  = item.get("price", {})
+    pstr   = f"{price.get('amount', '?')} {price.get('currency_code', 'EUR')}"
+    url    = f"https://www.vinted.de/items/{item.get('id')}"
+    imgs   = item.get("photos", [])
+    brand  = item.get("brand_title", "—")
+    size   = item.get("size_title", "—")
+    status = item.get("status", "—")
+    seller = item.get("user", {}).get("login", "—")
+    seller_id = item.get("user", {}).get("id", "")
+    seller_url = f"https://www.vinted.de/member/{seller_id}"
+
+    # Zustand zu Emoji mappen
+    zustand_map = {
+        "Neu mit Etikett": "🔵 Neu mit Etikett",
+        "Neu ohne Etikett": "🟢 Neu ohne Etikett",
+        "Sehr gut": "🟡 Sehr gut",
+        "Gut": "🟠 Gut",
+        "Zufriedenstellend": "🔴 Zufriedenstellend",
+    }
+    status_display = zustand_map.get(status, f"✨ {status}")
+
+    e = discord.Embed(color=cat["color"])
+    e.set_author(name=f"{cat['name']}  •  Vinted Snipebot",
+                 icon_url="https://www.vinted.de/favicon.ico")
+    e.title = f"**{title}**"
+    e.url   = url
+
+    e.description = (
+        f"## 💶  {pstr}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    )
+
+    e.add_field(name="🏷️  Marke",    value=f"`{brand}`",          inline=True)
+    e.add_field(name="📏  Größe",     value=f"`{size}`",            inline=True)
+    e.add_field(name="✨  Zustand",   value=status_display,         inline=True)
+    e.add_field(name="👤  Verkäufer", value=f"[{seller}]({seller_url})", inline=True)
+    e.add_field(name="📦  Kategorie", value=f"`{cat['name']}`",    inline=True)
+    e.add_field(name="‎",             value="‎",                    inline=True)  # spacer
+    e.add_field(name="🔗  Zum Artikel", value=f"**[➜ Auf Vinted ansehen]({url})**", inline=False)
+
+    if imgs:
+        e.set_image(url=imgs[0].get("url", ""))
+
+    e.set_footer(text="Vinted Snipebot  •  VintedHub")
+
+    return e, imgs
 
 # ─── Bot ──────────────────────────────────────────────────────────
 intents = discord.Intents.default()
@@ -348,7 +379,15 @@ async def check_all():
                     continue
 
                 try:
-                    await channel.send(embed=build_embed(item, cat))
+                    main_embed, imgs = build_embed(item, cat)
+                    await channel.send(embed=main_embed)
+
+                    # Bis zu 2 weitere Bilder als extra Embeds
+                    for img in imgs[1:3]:
+                        extra = discord.Embed(color=cat["color"], url=f"https://www.vinted.de/items/{item.get('id')}")
+                        extra.set_image(url=img.get("url",""))
+                        await channel.send(embed=extra)
+
                     print(f"✅ [{cat['name']}] {item.get('title')}")
                     posted = True
                 except Exception as e:
